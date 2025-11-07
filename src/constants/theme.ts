@@ -3,7 +3,7 @@ import { Colors, Theme } from '../types/theme';
 // Light theme colors
 export const lightColors: Colors = {
   // Background colors
-  background: '#F5F5DC', // Beige/off-white to match design
+  background: '#F5F5F0', // Beige/off-white to match design
   surface: '#FFFFFF',
   surfaceVariant: '#F5F5F5',
   

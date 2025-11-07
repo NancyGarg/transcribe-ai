@@ -6,11 +6,13 @@ import {
   StatusBar,
   TouchableOpacity,
   SafeAreaView,
+  Image,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { useTheme } from '../contexts/ThemeContext';
 import { Theme } from '../types';
-
+const centerImg = require('../../assets/homeScreen/centerImage/centerImg.png');
+const micIcon = require('../../assets/icons/microphoneIcon/mic.png');
 
 type RecordingMode = 'VOICE NOTE' | 'INTERVIEW' | 'LECTURE';
 
@@ -55,17 +57,12 @@ const HomeScreen: React.FC = () => {
 
       {/* Glowing Orb */}
       <View style={styles.orbContainer}>
-        <View style={[styles.orbOuter, { shadowColor: isDark ? '#ADFF2F' : '#90EE90' }]}>
-          <LinearGradient
-            colors={isDark ? ['#2D5016', '#4A7C2A', '#6B9F3D', '#4A7C2A'] : ['#90EE90', '#ADFF2F', '#FFFF00', '#90EE90']}
-            start={{ x: 0.2, y: 0.3 }}
-            end={{ x: 0.8, y: 0.7 }}
-            style={styles.orbGradient}
-          >
-            <View style={styles.orbInner} />
-          </LinearGradient>
-        </View>
+       
+          <Image source={centerImg} style={styles.orbImage} />
+     
       </View>
+
+      
 
       {/* Mode Label */}
       <View style={styles.modeLabelContainer}>
@@ -104,7 +101,7 @@ const HomeScreen: React.FC = () => {
           onPress={handleRecord}
           activeOpacity={0.8}
         >
-          <Text style={styles.microphoneIcon}>🎤</Text>
+          <Image source={micIcon} style={styles.microphoneIcon} />
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -123,7 +120,7 @@ const createStyles = (theme: Theme) =>
       alignItems: 'center',
       paddingHorizontal: 20,
       paddingTop: 10,
-      paddingBottom: 20,
+      paddingBottom: 32,
     },
     iconButton: {
       width: 40,
@@ -136,8 +133,7 @@ const createStyles = (theme: Theme) =>
       color: theme.colors.text,
     },
     privacyContainer: {
-      paddingHorizontal: 40,
-      marginBottom: 30,
+      paddingHorizontal: 96,
       alignItems: 'center',
     },
     privacyText: {
@@ -155,37 +151,10 @@ const createStyles = (theme: Theme) =>
       flex: 1,
       justifyContent: 'center',
       alignItems: 'center',
-      marginVertical: 30,
     },
-    orbOuter: {
-      width: 300,
-      height: 300,
-      borderRadius: 150,
-      overflow: 'visible',
-      // Enhanced glow effect with shadow
-      shadowColor: '#ADFF2F',
-      shadowOffset: {
-        width: 0,
-        height: 0,
-      },
-      shadowOpacity: 0.9,
-      shadowRadius: 50,
-      elevation: 25,
-    },
-    orbGradient: {
-      width: '100%',
-      height: '100%',
-      borderRadius: 150,
-      justifyContent: 'center',
-      alignItems: 'center',
-      overflow: 'hidden',
-    },
-    orbInner: {
-       width: '99.9%',
-      height: '99.9%',
-       borderRadius: '50%',
-       backgroundColor: 'rgba(255, 255, 255, 0.25)',
-      alignSelf: 'center',
+    orbImage: {
+       width: '80%',
+     
     },
     modeLabelContainer: {
       alignItems: 'center',
@@ -241,11 +210,10 @@ const createStyles = (theme: Theme) =>
     },
     recordButtonContainer: {
       alignItems: 'center',
-      paddingBottom: 40,
     },
     recordButton: {
-      width: 80,
-      height: 80,
+      width: 72,
+      height: 72,
       borderRadius: 40,
       backgroundColor: theme.colors.text,
       justifyContent: 'center',
@@ -263,7 +231,9 @@ const createStyles = (theme: Theme) =>
       backgroundColor: theme.colors.error,
     },
     microphoneIcon: {
-      fontSize: 32,
+      width:40,
+      height:40,
+      tintColor:'red'
     },
   });
 

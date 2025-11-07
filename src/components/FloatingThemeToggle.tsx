@@ -8,7 +8,7 @@ const FloatingThemeToggle: React.FC = () => {
   const { theme, toggleTheme, isDark } = useTheme();
   const insets = useSafeAreaInsets();
 
-  const styles = createStyles(theme, insets.bottom);
+  const styles = createStyles(theme, insets.top);
 
   return (
     <TouchableOpacity
@@ -26,15 +26,15 @@ const FloatingThemeToggle: React.FC = () => {
   );
 };
 
-const createStyles = (theme: Theme, bottomInset: number) =>
+const createStyles = (theme: Theme, topInset: number) =>
   StyleSheet.create({
     container: {
       position: 'absolute',
-      bottom: Math.max(bottomInset, 20) + 10, // Account for safe area, minimum 30px from bottom
-      right: 20,
-      width: 56,
-      height: 56,
-      borderRadius: 28,
+      top: Math.max(topInset, 20) + 19, // Account for safe area, minimum 30px from bottom
+      right: 70,
+      width: 24,
+      height: 24,
+      borderRadius: 12,
       backgroundColor: theme.colors.primary,
       justifyContent: 'center',
       alignItems: 'center',
@@ -55,7 +55,7 @@ const createStyles = (theme: Theme, bottomInset: number) =>
       alignItems: 'center',
     },
     icon: {
-      fontSize: 24,
+      fontSize: 10,
     },
   });
 
