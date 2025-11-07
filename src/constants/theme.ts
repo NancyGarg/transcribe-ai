@@ -3,9 +3,9 @@ import { Colors, Theme } from '../types/theme';
 // Light theme colors
 export const lightColors: Colors = {
   // Background colors
-  background: '#FFFFFF',
-  surface: '#F5F5F5',
-  surfaceVariant: '#E0E0E0',
+  background: '#F5F5DC', // Beige/off-white to match design
+  surface: '#FFFFFF',
+  surfaceVariant: '#F5F5F5',
   
   // Text colors
   text: '#000000',
@@ -43,9 +43,9 @@ export const lightColors: Colors = {
 // Dark theme colors
 export const darkColors: Colors = {
   // Background colors
-  background: '#000000',
-  surface: '#1C1C1E',
-  surfaceVariant: '#2C2C2E',
+  background: '#1A1A1A', // Dark gray instead of pure black for better contrast
+  surface: '#2C2C2E',
+  surfaceVariant: '#3A3A3C',
   
   // Text colors
   text: '#FFFFFF',

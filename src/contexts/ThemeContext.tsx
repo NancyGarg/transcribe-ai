@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback, ReactNode } from 'react';
 import { useColorScheme } from 'react-native';
 import { Theme, ThemeMode } from '../types/theme';
 import { themes } from '../constants/theme';
@@ -45,26 +45,29 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({
     }
   }, [systemColorScheme, themeMode]);
 
-  const toggleTheme = () => {
+  const toggleTheme = useCallback(() => {
     setThemeModeState((prev) => {
       if (prev === 'system') {
         return systemColorScheme === 'dark' ? 'light' : 'dark';
       }
       return prev === 'light' ? 'dark' : 'light';
     });
-  };
+  }, [systemColorScheme]);
 
-  const setThemeMode = (mode: ThemeMode | 'system') => {
+  const setThemeMode = useCallback((mode: ThemeMode | 'system') => {
     setThemeModeState(mode);
-  };
+  }, []);
 
-  const value: ThemeContextType = {
-    theme,
-    themeMode: actualThemeMode,
-    toggleTheme,
-    setThemeMode,
-    isDark: actualThemeMode === 'dark',
-  };
+  const value: ThemeContextType = useMemo(
+    () => ({
+      theme,
+      themeMode: actualThemeMode,
+      toggleTheme,
+      setThemeMode,
+      isDark: actualThemeMode === 'dark',
+    }),
+    [theme, actualThemeMode, toggleTheme, setThemeMode]
+  );
 
   return (
     <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
