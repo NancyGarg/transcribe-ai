@@ -136,15 +136,15 @@ const HomeScreen: React.FC = () => {
       </View>
 
       {/* Mode Label */}
-      <View style={styles.modeLabelContainer}>
+      {/* <View style={styles.modeLabelContainer}>
         <View style={styles.modeLabel}>
           <Text style={styles.modeLabelText}>IDEAL FOR MULTIPLE SPEAKERS</Text>
           <View style={styles.modeLabelArrow} />
         </View>
-      </View>
+      </View> */}
 
       {/* Mode Selector */}
-      <View style={styles.modeSelector}>
+    { recordingState==='idle' && <View style={styles.modeSelector}>
         {modes.map(mode => (
           <TouchableOpacity
             key={mode}
@@ -164,7 +164,7 @@ const HomeScreen: React.FC = () => {
           </TouchableOpacity>
         ))}
       </View>
-
+}
       {/* Recording Button */}
 
       <View style={styles.buttonRow}>
@@ -243,7 +243,7 @@ const createStyles = (theme: Theme) =>
     },
     orbContainer: {
       flex: 1,
-      justifyContent: 'center',
+      paddingTop: 100,
       alignItems: 'center',
     },
     orbImage: {
