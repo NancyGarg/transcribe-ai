@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import {
   View,
   Text,
@@ -14,6 +14,8 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTheme } from '../contexts/ThemeContext';
 import { Theme } from '../types';
 import { RootStackParamList } from '../navigation/types';
+import { useRecordingContext } from '../contexts/RecordingContext';
+import { RecordingState } from '../types/recording';
 
 const centerImg = require('../../assets/homeScreen/centerImage/centerImg.png');
 
@@ -23,30 +25,39 @@ type HomeScreenNavigationProp = NativeStackNavigationProp<
   'Home'
 >;
 
-type RecordingState = 'idle' | 'recording' | 'paused';
-
 const HomeScreen: React.FC = () => {
   const { theme, isDark } = useTheme();
+  const {
+    activeRecording,
+    startRecording,
+    pauseRecording,
+    resumeRecording,
+    stopRecording,
+    cancelRecording,
+  } = useRecordingContext();
   const navigation = useNavigation<HomeScreenNavigationProp>();
-  const [selectedMode, setSelectedMode] = useState<RecordingMode>('INTERVIEW');
-  const [recordingState, setRecordingState] = useState<RecordingState>('idle');
+  const [selectedMode, setSelectedMode] = React.useState<RecordingMode>('INTERVIEW');
 
   const styles = createStyles(theme);
 
   const modes: RecordingMode[] = ['VOICE NOTE', 'INTERVIEW', 'LECTURE'];
 
-  const handleRecord = () => {
-    setRecordingState(prev => {
-      switch (prev) {
-        case 'idle':
-          return 'recording';
-        case 'recording':
-          return 'paused';
-        case 'paused':
-        default:
-          return 'recording';
-      }
-    });
+  const recordingState: RecordingState = activeRecording?.state ?? 'idle';
+
+  const handleRecord = async () => {
+    switch (recordingState) {
+      case 'idle':
+        await startRecording();
+        break;
+      case 'recording':
+        await pauseRecording();
+        break;
+      case 'paused':
+        await resumeRecording();
+        break;
+      default:
+        break;
+    }
   };
 
   const recordingConfig = useMemo(() => {
@@ -54,8 +65,8 @@ const HomeScreen: React.FC = () => {
       case 'recording':
         return {
           icon: 'pause',
-          label: 'pause',
-          accessibility: 'Stop recording',
+          label: 'Pause',
+          accessibility: 'Pause recording',
         };
       case 'paused':
         return {
@@ -83,16 +94,26 @@ const HomeScreen: React.FC = () => {
       ? theme.colors.error
       : theme.colors.textSecondary;
 
-  const handleCancelRecording = () => {
-    setRecordingState('idle');
+  const handleCancelRecording = async () => {
+    await cancelRecording();
   };
 
-  const handleSaveRecording = () => {
-    // Placeholder for save logic; currently just resets the state
-    setRecordingState('idle');
+  const handleSaveRecording = async () => {
+    await stopRecording();
   };
 
   const showActions = recordingState !== 'idle';
+  const formattedDuration = useMemo(() => {
+    if (!activeRecording) {
+      return '00:00';
+    }
+    const totalSeconds = Math.floor(activeRecording.durationMs / 1000);
+    const minutes = Math.floor(totalSeconds / 60)
+      .toString()
+      .padStart(2, '0');
+    const seconds = (totalSeconds % 60).toString().padStart(2, '0');
+    return `${minutes}:${seconds}`;
+  }, [activeRecording]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -133,38 +154,47 @@ const HomeScreen: React.FC = () => {
           style={styles.orbImage}
           resizeMode="contain"
         />
+        {recordingState !== 'idle' && (
+          <View style={styles.liveContainer}>
+            <View style={styles.liveBadge}>
+              <View style={styles.liveDot} />
+              <Text style={styles.liveText}>LIVE • {formattedDuration}</Text>
+            </View>
+          </View>
+        )}
       </View>
 
       {/* Mode Label */}
-      {/* <View style={styles.modeLabelContainer}>
+      <View style={styles.modeLabelContainer}>
         <View style={styles.modeLabel}>
           <Text style={styles.modeLabelText}>IDEAL FOR MULTIPLE SPEAKERS</Text>
           <View style={styles.modeLabelArrow} />
         </View>
-      </View> */}
+      </View>
 
       {/* Mode Selector */}
-    { recordingState==='idle' && <View style={styles.modeSelector}>
-        {modes.map(mode => (
-          <TouchableOpacity
-            key={mode}
-            onPress={() => setSelectedMode(mode)}
-            style={styles.modeButton}
-            accessibilityRole="button"
-            accessibilityState={{ selected: selectedMode === mode }}
-          >
-            <Text
-              style={[
-                styles.modeText,
-                selectedMode === mode && styles.modeTextSelected,
-              ]}
+      {recordingState === 'idle' && (
+        <View style={styles.modeSelector}>
+          {modes.map((mode) => (
+            <TouchableOpacity
+              key={mode}
+              onPress={() => setSelectedMode(mode)}
+              style={styles.modeButton}
+              accessibilityRole="button"
+              accessibilityState={{ selected: selectedMode === mode }}
             >
-              {mode}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-}
+              <Text
+                style={[
+                  styles.modeText,
+                  selectedMode === mode && styles.modeTextSelected,
+                ]}
+              >
+                {mode}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
       {/* Recording Button */}
 
       <View style={styles.buttonRow}>
@@ -250,6 +280,34 @@ const createStyles = (theme: Theme) =>
       width: '80%',
       maxWidth: 320,
       aspectRatio: 1,
+    },
+    liveContainer: {
+      position: 'absolute',
+      bottom: 24,
+      width: '100%',
+      alignItems: 'center',
+    },
+    liveBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      paddingHorizontal: 16,
+      paddingVertical: 8,
+      borderRadius: 999,
+      backgroundColor: `${theme.colors.error}20`,
+      borderWidth: 1,
+      borderColor: theme.colors.error,
+    },
+    liveDot: {
+      width: 10,
+      height: 10,
+      borderRadius: 5,
+      backgroundColor: theme.colors.error,
+    },
+    liveText: {
+      color: theme.colors.error,
+      fontWeight: '600',
+      letterSpacing: 0.5,
     },
     modeLabelContainer: {
       alignItems: 'center',
@@ -342,6 +400,9 @@ const createStyles = (theme: Theme) =>
       color: theme.colors.text,
       textTransform: 'uppercase',
       letterSpacing: 1,
+    },
+    recordingStatus: {
+      fontSize: 12,
     },
     tertiaryButtonText: {
       fontSize: 13,

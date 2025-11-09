@@ -43,15 +43,20 @@ export const RecordingProvider: React.FC<{ children: ReactNode }> = ({
   useEffect(() => {
     recorderService.setSubscriptionDuration(250);
     recorderService.onProgress = ({ currentPosition }) => {
-      setActiveRecording((prev) =>
-        prev
-          ? {
-              ...prev,
-              updatedAt: Date.now(),
-              durationMs: currentPosition,
-            }
-          : prev
-      );
+      setActiveRecording((prev) => {
+        if (!prev) {
+          return prev;
+        }
+        const positionSeconds = Number.isFinite(currentPosition)
+          ? currentPosition
+          : 0;
+        const durationMs = Math.max(0, Math.floor(positionSeconds * 1000));
+        return {
+          ...prev,
+          updatedAt: Date.now(),
+          durationMs,
+        };
+      });
     };
 
     return () => {
@@ -140,7 +145,12 @@ export const RecordingProvider: React.FC<{ children: ReactNode }> = ({
       });
 
       if (completedRecording) {
-        setRecordings((prev) => [completedRecording!, ...prev]);
+        setRecordings((prev) => {
+          if (!completedRecording) {
+            return prev;
+          }
+          return [completedRecording, ...prev];
+        });
       }
 
       recordingStateRef.current = 'idle';
@@ -170,28 +180,25 @@ export const RecordingProvider: React.FC<{ children: ReactNode }> = ({
     setRecordings([]);
   }, []);
 
-  const value = useMemo<RecordingContextValue>(
-    () => ({
-      recordings,
-      activeRecording,
-      startRecording,
-      pauseRecording,
-      resumeRecording,
-      stopRecording,
-      cancelRecording,
-      clearRecordings,
-    }),
-    [
-      recordings,
-      activeRecording,
-      startRecording,
-      pauseRecording,
-      resumeRecording,
-      stopRecording,
-      cancelRecording,
-      clearRecordings,
-    ]
-  );
+  const value = useMemo<RecordingContextValue>(() => ({
+    recordings,
+    activeRecording,
+    startRecording,
+    pauseRecording,
+    resumeRecording,
+    stopRecording,
+    cancelRecording,
+    clearRecordings,
+  }), [
+    recordings,
+    activeRecording,
+    startRecording,
+    pauseRecording,
+    resumeRecording,
+    stopRecording,
+    cancelRecording,
+    clearRecordings,
+  ]);
 
   return (
     <RecordingContext.Provider value={value}>

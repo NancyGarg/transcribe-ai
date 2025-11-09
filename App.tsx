@@ -3,7 +3,7 @@ import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { enableScreens } from 'react-native-screens';
-import { AppProvider, ThemeProvider, useTheme } from './src/contexts';
+import { AppProvider, ThemeProvider, RecordingProvider, useTheme } from './src/contexts';
 import { HomeScreen, SettingsScreen } from './src/screens';
 import { RootStackParamList } from './src/navigation/types';
 
@@ -61,7 +61,9 @@ function App() {
     <ThemeProvider initialMode="system">
       <AppProvider>
         <SafeAreaProvider>
-          <AppNavigator />
+          <RecordingProvider>
+            <AppNavigator />
+          </RecordingProvider>
         </SafeAreaProvider>
       </AppProvider>
     </ThemeProvider>
