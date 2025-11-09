@@ -4,7 +4,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { enableScreens } from 'react-native-screens';
 import { AppProvider, ThemeProvider, RecordingProvider, useTheme } from './src/contexts';
-import { HomeScreen, SettingsScreen } from './src/screens';
+import { HomeScreen, SettingsScreen, LibraryScreen, RecordingDetailsScreen } from './src/screens';
 import { RootStackParamList } from './src/navigation/types';
 
 enableScreens();
@@ -50,6 +50,16 @@ const AppNavigator: React.FC = () => {
           name="Settings"
           component={SettingsScreen}
           options={{ title: 'Settings' }}
+        />
+        <Stack.Screen
+          name="Library"
+          component={LibraryScreen}
+          options={{ title: 'Library' }}
+        />
+        <Stack.Screen
+          name="RecordingDetails"
+          component={RecordingDetailsScreen}
+          options={{ title: 'Recording Details' }}
         />
       </Stack.Navigator>
     </NavigationContainer>

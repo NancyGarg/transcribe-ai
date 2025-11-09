@@ -126,7 +126,8 @@ const HomeScreen: React.FC = () => {
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.iconButton}
-          accessibilityLabel="Open navigation menu"
+          onPress={() => navigation.navigate('Library')}
+          accessibilityLabel="Open library"
         >
           <MaterialIcons name="menu" size={22} color={theme.colors.text} />
         </TouchableOpacity>
