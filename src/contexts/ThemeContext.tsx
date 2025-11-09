@@ -5,9 +5,12 @@ import { themes } from '../constants/theme';
 
 interface ThemeContextType {
   theme: Theme;
+  /** Resolved theme mode after considering system preference */
   themeMode: ThemeMode;
+  /** User-selected preference (light, dark, or system) */
+  themePreference: ThemeMode | 'system';
   toggleTheme: () => void;
-  setThemeMode: (mode: ThemeMode) => void;
+  setThemeMode: (mode: ThemeMode | 'system') => void;
   isDark: boolean;
 }
 
@@ -23,30 +26,30 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({
   initialMode = 'system',
 }) => {
   const systemColorScheme = useColorScheme();
-  const [themeMode, setThemeModeState] = useState<ThemeMode | 'system'>(
+  const [themePreference, setThemePreference] = useState<ThemeMode | 'system'>(
     initialMode
   );
 
   // Determine the actual theme mode (system, light, or dark)
   const actualThemeMode: ThemeMode =
-    themeMode === 'system'
+    themePreference === 'system'
       ? systemColorScheme === 'dark'
         ? 'dark'
         : 'light'
-      : themeMode;
+      : themePreference;
 
   // Get the current theme based on the mode
   const theme = themes[actualThemeMode];
 
   // Update theme when system color scheme changes (if mode is 'system')
   useEffect(() => {
-    if (themeMode === 'system') {
+    if (themePreference === 'system') {
       // Theme will automatically update when systemColorScheme changes
     }
-  }, [systemColorScheme, themeMode]);
+  }, [systemColorScheme, themePreference]);
 
   const toggleTheme = useCallback(() => {
-    setThemeModeState((prev) => {
+    setThemePreference((prev) => {
       if (prev === 'system') {
         return systemColorScheme === 'dark' ? 'light' : 'dark';
       }
@@ -55,18 +58,19 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({
   }, [systemColorScheme]);
 
   const setThemeMode = useCallback((mode: ThemeMode | 'system') => {
-    setThemeModeState(mode);
+    setThemePreference(mode);
   }, []);
 
   const value: ThemeContextType = useMemo(
     () => ({
       theme,
       themeMode: actualThemeMode,
+      themePreference,
       toggleTheme,
       setThemeMode,
       isDark: actualThemeMode === 'dark',
     }),
-    [theme, actualThemeMode, toggleTheme, setThemeMode]
+    [theme, actualThemeMode, themePreference, toggleTheme, setThemeMode]
   );
 
   return (

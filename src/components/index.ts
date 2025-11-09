@@ -1,3 +1,3 @@
 // Export all components from here
-export { default as FloatingThemeToggle } from './FloatingThemeToggle';
+// (no shared components exported yet)
 

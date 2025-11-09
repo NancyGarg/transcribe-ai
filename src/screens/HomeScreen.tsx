@@ -8,16 +8,24 @@ import {
   SafeAreaView,
   Image,
 } from 'react-native';
-import LinearGradient from 'react-native-linear-gradient';
+import { MaterialIcons } from '@react-native-vector-icons/material-icons';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTheme } from '../contexts/ThemeContext';
 import { Theme } from '../types';
+import { RootStackParamList } from '../navigation/types';
+
 const centerImg = require('../../assets/homeScreen/centerImage/centerImg.png');
-const micIcon = require('../../assets/icons/microphoneIcon/mic.png');
 
 type RecordingMode = 'VOICE NOTE' | 'INTERVIEW' | 'LECTURE';
+type HomeScreenNavigationProp = NativeStackNavigationProp<
+  RootStackParamList,
+  'Home'
+>;
 
 const HomeScreen: React.FC = () => {
   const { theme, isDark } = useTheme();
+  const navigation = useNavigation<HomeScreenNavigationProp>();
   const [selectedMode, setSelectedMode] = useState<RecordingMode>('INTERVIEW');
   const [isRecording, setIsRecording] = useState(false);
 
@@ -38,11 +46,26 @@ const HomeScreen: React.FC = () => {
 
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.iconButton}>
-          <Text style={styles.iconText}>☰</Text>
+        <TouchableOpacity
+          style={styles.iconButton}
+          accessibilityLabel="Open navigation menu"
+        >
+          <MaterialIcons
+            name="menu"
+            size={22}
+            color={theme.colors.text}
+          />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.iconButton}>
-          <Text style={styles.iconText}>⚙️</Text>
+        <TouchableOpacity
+          style={styles.iconButton}
+          onPress={() => navigation.navigate('Settings')}
+          accessibilityLabel="Open settings"
+        >
+          <MaterialIcons
+            name="settings"
+            size={22}
+            color={theme.colors.text}
+          />
         </TouchableOpacity>
       </View>
 
@@ -57,12 +80,8 @@ const HomeScreen: React.FC = () => {
 
       {/* Glowing Orb */}
       <View style={styles.orbContainer}>
-       
-          <Image source={centerImg} style={styles.orbImage} />
-     
+        <Image source={centerImg} style={styles.orbImage} resizeMode="contain" />
       </View>
-
-      
 
       {/* Mode Label */}
       <View style={styles.modeLabelContainer}>
@@ -81,6 +100,8 @@ const HomeScreen: React.FC = () => {
             key={mode}
             onPress={() => setSelectedMode(mode)}
             style={styles.modeButton}
+            accessibilityRole="button"
+            accessibilityState={{ selected: selectedMode === mode }}
           >
             <Text
               style={[
@@ -100,8 +121,13 @@ const HomeScreen: React.FC = () => {
           style={[styles.recordButton, isRecording && styles.recordButtonActive]}
           onPress={handleRecord}
           activeOpacity={0.8}
+          accessibilityLabel={isRecording ? 'Stop recording' : 'Start recording'}
         >
-          <Image source={micIcon} style={styles.microphoneIcon} />
+         <MaterialIcons
+            name="mic"
+            size={36}
+            color={theme.colors.surface}
+          />
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -128,10 +154,6 @@ const createStyles = (theme: Theme) =>
       justifyContent: 'center',
       alignItems: 'center',
     },
-    iconText: {
-      fontSize: 24,
-      color: theme.colors.text,
-    },
     privacyContainer: {
       paddingHorizontal: 96,
       alignItems: 'center',
@@ -144,7 +166,7 @@ const createStyles = (theme: Theme) =>
       lineHeight: 24,
     },
     privacyHighlight: {
-      color: theme.colors.success, // Green color from theme
+      color: theme.colors.success,
       fontWeight: '600',
     },
     orbContainer: {
@@ -153,8 +175,9 @@ const createStyles = (theme: Theme) =>
       alignItems: 'center',
     },
     orbImage: {
-       width: '80%',
-     
+      width: '80%',
+      maxWidth: 320,
+      aspectRatio: 1,
     },
     modeLabelContainer: {
       alignItems: 'center',
@@ -210,6 +233,7 @@ const createStyles = (theme: Theme) =>
     },
     recordButtonContainer: {
       alignItems: 'center',
+      marginBottom: 24,
     },
     recordButton: {
       width: 72,
@@ -231,9 +255,9 @@ const createStyles = (theme: Theme) =>
       backgroundColor: theme.colors.error,
     },
     microphoneIcon: {
-      width:40,
-      height:40,
-      tintColor:'red'
+      width: 40,
+      height: 40,
+      tintColor: theme.colors.text,
     },
   });
 
