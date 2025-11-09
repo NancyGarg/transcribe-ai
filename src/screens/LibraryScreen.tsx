@@ -157,7 +157,6 @@ const LibraryScreen: React.FC = () => {
             {index < section.data.length - 1 && <View style={styles.itemDivider} />}
           </View>
         )}
-        SectionSeparatorComponent={() => <View style={styles.sectionSpacer} />}
       />
     </SafeAreaView>
   );
@@ -168,6 +167,7 @@ const createStyles = (theme: Theme) =>
     container: {
       flex: 1,
       backgroundColor: theme.colors.background,
+      
     },
     listContent: {
       paddingHorizontal: 24,
@@ -198,9 +198,7 @@ const createStyles = (theme: Theme) =>
       marginBottom: 12,
       letterSpacing: 1,
     },
-    sectionSpacer: {
-      height: 24,
-    },
+  
     listItem: {
       flexDirection: 'row',
       alignItems: 'center',

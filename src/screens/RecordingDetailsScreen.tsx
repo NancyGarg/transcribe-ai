@@ -6,6 +6,7 @@ import {
   StyleSheet,
   StatusBar,
   TouchableOpacity,
+  ScrollView,
 } from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
@@ -17,15 +18,22 @@ import { RootStackParamList } from '../navigation/types';
 import { playerService } from '../services/player';
 
 const formatFullDate = (timestamp: number) =>
-  new Date(timestamp).toLocaleString();
+  new Date(timestamp).toLocaleString([], {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 
-const formatDuration = (durationMs: number) => {
+const formatDuration = (durationMs: number | undefined) => {
+  if (!durationMs) {
+    return '0m 0s';
+  }
   const totalSeconds = Math.floor(durationMs / 1000);
-  const minutes = Math.floor(totalSeconds / 60)
-    .toString()
-    .padStart(2, '0');
-  const seconds = (totalSeconds % 60).toString().padStart(2, '0');
-  return `${minutes}:${seconds}`;
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}m ${seconds.toString().padStart(2, '0')}s`;
 };
 
 type RecordingDetailsRoute = RouteProp<RootStackParamList, 'RecordingDetails'>;
@@ -33,6 +41,9 @@ type RecordingDetailsNav = NativeStackNavigationProp<
   RootStackParamList,
   'RecordingDetails'
 >;
+
+const TABS = ['Summary', 'Transcription', 'Chat'] as const;
+type TabKey = (typeof TABS)[number];
 
 const RecordingDetailsScreen: React.FC = () => {
   const route = useRoute<RecordingDetailsRoute>();
@@ -45,6 +56,7 @@ const RecordingDetailsScreen: React.FC = () => {
   );
   const [currentPosition, setCurrentPosition] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [selectedTab, setSelectedTab] = useState<TabKey>('Summary');
 
   useEffect(() => {
     playerService.onProgress = ({ currentPosition, duration }) => {
@@ -66,11 +78,9 @@ const RecordingDetailsScreen: React.FC = () => {
     [recordings, route.params.recordingId]
   );
 
-  const totalDurationMs = recording?.durationMs ?? duration;
-  const displayDuration = totalDurationMs || duration;
-
+  const totalDurationMs = recording?.durationMs ?? duration * 1000;
   const formattedProgress = formatDuration(currentPosition * 1000);
-  const formattedTotal = formatDuration(displayDuration);
+  const formattedTotal = formatDuration(totalDurationMs);
 
   const togglePlayback = async () => {
     if (!recording) {
@@ -122,82 +132,115 @@ const RecordingDetailsScreen: React.FC = () => {
         barStyle={isDark ? 'light-content' : 'dark-content'}
         backgroundColor={styles.container.backgroundColor}
       />
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.iconButton}
-          onPress={() => navigation.goBack()}
-          accessibilityLabel="Go back"
-        >
-          <MaterialIcons name="arrow-back" size={24} color={theme.colors.text} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>{recording.title}</Text>
-        <View style={styles.iconPlaceholder} />
-      </View>
-
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Overview</Text>
-        <View style={styles.row}>
-          <Text style={styles.label}>Duration</Text>
-          <Text style={styles.value}>{formatDuration(recording.durationMs)}</Text>
-        </View>
-        <View style={styles.row}>
-          <Text style={styles.label}>Created</Text>
-          <Text style={styles.value}>{formatFullDate(recording.createdAt)}</Text>
-        </View>
-        <View style={styles.row}>
-          <Text style={styles.label}>Status</Text>
-          <Text style={styles.value}>{recording.status.toUpperCase()}</Text>
-        </View>
-      </View>
-
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Playback</Text>
-        <View style={styles.playerControls}>
-          <TouchableOpacity
-            style={styles.playerButton}
-            onPress={togglePlayback}
-            accessibilityLabel={
-              playState === 'playing' ? 'Pause playback' : 'Play recording'
-            }
-          >
-            <MaterialIcons
-              name={playState === 'playing' ? 'pause' : 'play-arrow'}
-              size={36}
-              color={theme.colors.onPrimary}
+     
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.playerCard}>
+          <View style={styles.scrubberTrack}>
+            <View
+              style={[
+                styles.scrubberProgress,
+                {
+                  width: `${Math.min(
+                    100,
+                    (currentPosition * 1000 * 100) / (totalDurationMs || 1)
+                  )}%`,
+                },
+              ]}
             />
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.stopButton}
-            onPress={stopPlayback}
-            accessibilityLabel="Stop playback"
-            disabled={playState === 'stopped'}
-          >
-            <MaterialIcons
-              name="stop"
-              size={24}
-              color={
-                playState === 'stopped'
-                  ? theme.colors.textTertiary
-                  : theme.colors.text
+          </View>
+          <View style={styles.playerTimes}>
+            <Text style={styles.timeText}>{formattedProgress}</Text>
+            <Text style={styles.timeText}>{formattedTotal}</Text>
+          </View>
+          <View style={styles.playerButtonsRow}>
+            <TouchableOpacity
+          
+              onPress={() => {}}
+              accessibilityLabel="Skip back"
+            >
+              <MaterialIcons
+                name="replay-10"
+                size={24}
+                color={theme.colors.text}
+              />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.iconCirclePrimary}
+              onPress={togglePlayback}
+              accessibilityLabel={
+                playState === 'playing' ? 'Pause playback' : 'Play recording'
               }
-            />
-          </TouchableOpacity>
-          <View style={styles.progressBlock}>
-            <Text style={styles.progressText}>
-              {formattedProgress} / {formattedTotal}
-            </Text>
+            >
+              <MaterialIcons
+                name={playState === 'playing' ? 'pause' : 'play-arrow'}
+                size={18}
+                color={theme.colors.onPrimary}
+              />
+            </TouchableOpacity>
+            <TouchableOpacity
+    
+              onPress={() => {}}
+              accessibilityLabel="Skip forward"
+            >
+              <MaterialIcons
+                name="forward-10"
+                size={24}
+                color={theme.colors.text}
+              />
+            </TouchableOpacity>
           </View>
         </View>
-      </View>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Transcript</Text>
-        {recording.transcript ? (
-          <Text style={styles.transcriptText}>{recording.transcript}</Text>
-        ) : (
-          <Text style={styles.transcriptPending}>Transcript pending…</Text>
-        )}
-      </View>
+        <View style={styles.tabBar}>
+          {TABS.map((tab) => (
+            <TouchableOpacity
+              key={tab}
+              style={[styles.tabButton, tab === selectedTab && styles.tabButtonActive]}
+              onPress={() => setSelectedTab(tab)}
+            >
+              <Text
+                style={[
+                  styles.tabLabel,
+                  tab === selectedTab && styles.tabLabelActive,
+                ]}
+              >
+                {tab}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        <View style={styles.summaryCard}>
+          <Text style={styles.title}>{recording.title}</Text>
+          <View style={styles.metaRow}>
+            <View style={styles.metaGroup}>
+              <MaterialIcons
+                name="event"
+                size={18}
+                color={theme.colors.textSecondary}
+              />
+              <Text style={styles.metaText}>{formatFullDate(recording.createdAt)}</Text>
+            </View>
+            <View style={styles.metaGroup}>
+              <MaterialIcons
+                name="schedule"
+                size={18}
+                color={theme.colors.textSecondary}
+              />
+              <Text style={styles.metaText}>{formattedTotal}</Text>
+            </View>
+          </View>
+        </View>
+
+      
+        <View style={styles.sectionCard}>
+          <Text style={styles.sectionTitle}>{selectedTab}</Text>
+          <Text style={styles.comingSoonText}>Coming soon</Text>
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 };
@@ -207,15 +250,19 @@ const createStyles = (theme: Theme) =>
     container: {
       flex: 1,
       backgroundColor: theme.colors.background,
+    },
+    scrollContent: {
       paddingHorizontal: 20,
-      paddingTop: 16,
-      gap: 16,
+      paddingVertical: 32,
+      gap: 24,
     },
     header: {
       flexDirection: 'row',
       alignItems: 'center',
+      paddingHorizontal: 20,
+      paddingTop: 16,
+      paddingBottom: 8,
       gap: 16,
-      marginBottom: 8,
     },
     iconButton: {
       width: 40,
@@ -232,76 +279,131 @@ const createStyles = (theme: Theme) =>
       fontSize: 18,
       fontWeight: '700',
       color: theme.colors.text,
+      textAlign: 'center',
     },
-    section: {
+    playerCard: {
       backgroundColor: theme.colors.surface,
-      padding: 16,
-      borderRadius: 16,
-      gap: 12,
+      borderRadius: 20,
+      paddingVertical: 24,
+      paddingHorizontal: 20,
+      gap: 16,
       shadowColor: theme.colors.shadow,
-      shadowOffset: { width: 0, height: 4 },
+      shadowOffset: { width: 0, height: 6 },
       shadowOpacity: 0.08,
-      shadowRadius: 12,
-      elevation: 2,
+      shadowRadius: 16,
+      elevation: 3,
+    },
+    scrubberTrack: {
+      height: 6,
+      borderRadius: 3,
+      backgroundColor: theme.colors.surfaceVariant,
+      overflow: 'hidden',
+    },
+    scrubberProgress: {
+      height: '100%',
+      backgroundColor: theme.colors.primary,
+      borderRadius: 3,
+    },
+    playerTimes: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+    },
+    timeText: {
+      fontSize: 12,
+      color: theme.colors.textSecondary,
+    },
+    playerButtonsRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap:32
+    },
+
+    iconCirclePrimary: {
+      backgroundColor: theme.colors.primary,
+      justifyContent: 'center',
+      alignItems: 'center',
+      width: 32,
+      height: 32,
+      borderRadius: 12,
+    },
+ 
+    tabBar: {
+      flexDirection: 'row',
+      backgroundColor: theme.colors.surface,
+      borderRadius: 18,
+      padding: 4,
+      alignSelf: 'stretch',
+    },
+    tabButton: {
+      flex: 1,
+      paddingVertical: 10,
+      borderRadius: 14,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    tabButtonActive: {
+      backgroundColor: `${theme.colors.primary}25`,
+    },
+    tabLabel: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: theme.colors.textSecondary,
+    },
+    tabLabelActive: {
+      color: theme.colors.primary,
+    },
+    summaryCard: {
+      backgroundColor: theme.colors.surface,
+      borderRadius: 16,
+      padding: 20,
+      gap: 12,
+    },
+    title: {
+      fontSize: 20,
+      fontWeight: '700',
+      color: theme.colors.text,
+    },
+    metaRow: {
+      flexDirection: 'row',
+      gap: 16,
+    },
+    metaGroup: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+    },
+    metaText: {
+      fontSize: 13,
+      color: theme.colors.textSecondary,
+    },
+    sectionCard: {
+      backgroundColor: theme.colors.surface,
+      borderRadius: 16,
+      padding: 20,
+      gap: 12,
+    },
+    sectionHeaderRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    sectionAccent: {
+      fontSize: 13,
+      fontWeight: '700',
+      color: theme.colors.success,
+      textTransform: 'uppercase',
+    },
+    sectionActions: {
+      flexDirection: 'row',
+      gap: 12,
     },
     sectionTitle: {
       fontSize: 16,
       fontWeight: '700',
       color: theme.colors.text,
     },
-    row: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-    },
-    label: {
-      fontSize: 14,
-      color: theme.colors.textSecondary,
-    },
-    value: {
-      fontSize: 14,
-      fontWeight: '600',
-      color: theme.colors.text,
-    },
-    playerControls: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 16,
-    },
-    playerButton: {
-      width: 60,
-      height: 60,
-      borderRadius: 30,
-      backgroundColor: theme.colors.primary,
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
-    stopButton: {
-      width: 44,
-      height: 44,
-      borderRadius: 22,
-      borderWidth: 1,
-      borderColor: theme.colors.border,
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
-    progressBlock: {
-      flex: 1,
-      alignItems: 'flex-end',
-    },
-    progressText: {
-      fontSize: 14,
-      color: theme.colors.textSecondary,
-    },
-    playerText: {
-      fontSize: 14,
-      color: theme.colors.textSecondary,
-    },
-    transcriptText: {
-      fontSize: 14,
-      lineHeight: 20,
-      color: theme.colors.text,
-    },
-    transcriptPending: {
+    comingSoonText: {
       fontSize: 14,
       fontStyle: 'italic',
       color: theme.colors.textSecondary,
