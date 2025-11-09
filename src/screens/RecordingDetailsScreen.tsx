@@ -238,7 +238,17 @@ const RecordingDetailsScreen: React.FC = () => {
       
         <View style={styles.sectionCard}>
           <Text style={styles.sectionTitle}>{selectedTab}</Text>
-          <Text style={styles.comingSoonText}>Coming soon</Text>
+          {selectedTab === 'Transcription' ? (
+            recording.transcript ? (
+              <Text style={styles.transcriptBody}>{recording.transcript}</Text>
+            ) : (
+              <Text style={styles.comingSoonText}>
+                Transcript will appear here once available.
+              </Text>
+            )
+          ) : (
+            <Text style={styles.comingSoonText}>Coming soon</Text>
+          )}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -423,6 +433,11 @@ const createStyles = (theme: Theme) =>
       fontSize: 16,
       color: theme.colors.primary,
       fontWeight: '600',
+    },
+    transcriptBody: {
+      fontSize: 15,
+      lineHeight: 22,
+      color: theme.colors.text,
     },
   });
 
