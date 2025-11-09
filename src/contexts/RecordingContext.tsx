@@ -41,7 +41,7 @@ export const RecordingProvider: React.FC<{ children: ReactNode }> = ({
   const recordingStateRef = useRef<RecordingState>('idle');
 
   useEffect(() => {
-    recorderService.setSubscriptionDuration(250);
+    recorderService.setSubscriptionDuration(1000);
     recorderService.onProgress = ({ currentPosition }) => {
       setActiveRecording((prev) => {
         if (!prev) {
@@ -50,7 +50,8 @@ export const RecordingProvider: React.FC<{ children: ReactNode }> = ({
         const positionSeconds = Number.isFinite(currentPosition)
           ? currentPosition
           : 0;
-        const durationMs = Math.max(0, Math.floor(positionSeconds * 1000));
+        const segmentMs = Math.max(0, Math.floor(positionSeconds));
+        const durationMs = Math.max(prev.durationMs, segmentMs);
         return {
           ...prev,
           updatedAt: Date.now(),

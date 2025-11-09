@@ -105,14 +105,17 @@ const HomeScreen: React.FC = () => {
   const showActions = recordingState !== 'idle';
   const formattedDuration = useMemo(() => {
     if (!activeRecording) {
-      return '00:00';
+      return '00:00:00';
     }
     const totalSeconds = Math.floor(activeRecording.durationMs / 1000);
-    const minutes = Math.floor(totalSeconds / 60)
+    const hours = Math.floor(totalSeconds / 3600)
+      .toString()
+      .padStart(2, '0');
+    const minutes = Math.floor((totalSeconds % 3600) / 60)
       .toString()
       .padStart(2, '0');
     const seconds = (totalSeconds % 60).toString().padStart(2, '0');
-    return `${minutes}:${seconds}`;
+    return `${hours}:${minutes}:${seconds}`;
   }, [activeRecording]);
 
   return (
@@ -157,21 +160,22 @@ const HomeScreen: React.FC = () => {
         />
         {recordingState !== 'idle' && (
           <View style={styles.liveContainer}>
-            <View style={styles.liveBadge}>
-              <View style={styles.liveDot} />
-              <Text style={styles.liveText}>LIVE • {formattedDuration}</Text>
-            </View>
+        
+      
+              <Text style={styles.liveText}>{formattedDuration}</Text>
+  
           </View>
         )}
+        
       </View>
 
       {/* Mode Label */}
-      <View style={styles.modeLabelContainer}>
+      {/* <View style={styles.modeLabelContainer}>
         <View style={styles.modeLabel}>
           <Text style={styles.modeLabelText}>IDEAL FOR MULTIPLE SPEAKERS</Text>
           <View style={styles.modeLabelArrow} />
         </View>
-      </View>
+      </View> */}
 
       {/* Mode Selector */}
       {recordingState === 'idle' && (
@@ -284,31 +288,15 @@ const createStyles = (theme: Theme) =>
     },
     liveContainer: {
       position: 'absolute',
-      bottom: 24,
-      width: '100%',
-      alignItems: 'center',
+      bottom: 44,
     },
-    liveBadge: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 8,
-      paddingHorizontal: 16,
-      paddingVertical: 8,
-      borderRadius: 999,
-      backgroundColor: `${theme.colors.error}20`,
-      borderWidth: 1,
-      borderColor: theme.colors.error,
-    },
-    liveDot: {
-      width: 10,
-      height: 10,
-      borderRadius: 5,
-      backgroundColor: theme.colors.error,
-    },
+  
+  
     liveText: {
-      color: theme.colors.error,
-      fontWeight: '600',
+      color: theme.colors.text,
+      fontWeight: '700',
       letterSpacing: 0.5,
+      fontSize: 32,
     },
     modeLabelContainer: {
       alignItems: 'center',

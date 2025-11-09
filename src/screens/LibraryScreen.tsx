@@ -18,7 +18,7 @@ import { RootStackParamList } from '../navigation/types';
 import { RecordingEntry } from '../types/recording';
 
 const formatDuration = (durationMs: number) => {
-  const totalSeconds = Math.floor(durationMs / 1000);
+  const totalSeconds = Math.floor(durationMs/1000);
   const minutes = Math.floor(totalSeconds / 60)
     .toString()
     .padStart(2, '0');

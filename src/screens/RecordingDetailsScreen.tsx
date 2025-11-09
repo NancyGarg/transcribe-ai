@@ -60,7 +60,7 @@ const RecordingDetailsScreen: React.FC = () => {
 
   useEffect(() => {
     playerService.onProgress = ({ currentPosition, duration }) => {
-      setCurrentPosition(currentPosition);
+      setCurrentPosition(currentPosition/1000);
       setDuration(duration);
     };
     playerService.onEnd = () => {

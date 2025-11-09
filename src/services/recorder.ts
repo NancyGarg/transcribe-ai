@@ -82,7 +82,7 @@ class RecorderService {
   onProgress?: (progress: RecorderProgress) => void;
 
   setSubscriptionDuration(durationMs: number) {
-    Sound.setSubscriptionDuration(durationMs);
+    Sound.setSubscriptionDuration(durationMs / 1000);
   }
 
   private cleanupProgressListener() {
