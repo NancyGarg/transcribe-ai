@@ -15,6 +15,7 @@ import {
   RecordingEntry,
   RecordingState,
 } from '../types/recording';
+import { transcribeAudio, DeepgramError } from '../services/deepgram';
 
 interface RecordingContextValue {
   recordings: RecordingEntry[];
@@ -50,7 +51,7 @@ export const RecordingProvider: React.FC<{ children: ReactNode }> = ({
         const positionSeconds = Number.isFinite(currentPosition)
           ? currentPosition
           : 0;
-        const segmentMs = Math.max(0, Math.floor(positionSeconds));
+        const segmentMs = Math.max(0, Math.floor(positionSeconds * 1000));
         const durationMs = Math.max(prev.durationMs, segmentMs);
         return {
           ...prev,
@@ -120,6 +121,56 @@ export const RecordingProvider: React.FC<{ children: ReactNode }> = ({
     }
   }, []);
 
+  const transcribeRecordingAsync = useCallback(
+    async (entry: RecordingEntry) => {
+      if (!entry.filePath) {
+        return;
+      }
+
+      setRecordings((prev) =>
+        prev.map((rec) =>
+          rec.id === entry.id
+            ? { ...rec, status: 'processing', updatedAt: Date.now() }
+            : rec
+        )
+      );
+
+      try {
+        const transcript = await transcribeAudio(entry.filePath);
+        setRecordings((prev) =>
+          prev.map((rec) =>
+            rec.id === entry.id
+              ? {
+                  ...rec,
+                  status: 'completed',
+                  transcript,
+                  updatedAt: Date.now(),
+                }
+              : rec
+          )
+        );
+      } catch (error) {
+        const errorMessage =
+          error instanceof DeepgramError
+            ? error.message
+            : 'Transcription failed. Please try again later.';
+        setRecordings((prev) =>
+          prev.map((rec) =>
+            rec.id === entry.id
+              ? {
+                  ...rec,
+                  status: 'failed',
+                  errorMessage,
+                  updatedAt: Date.now(),
+                }
+              : rec
+          )
+        );
+      }
+    },
+    []
+  );
+
   const stopRecording = useCallback(async () => {
     if (recordingStateRef.current === 'idle') {
       return undefined;
@@ -146,12 +197,8 @@ export const RecordingProvider: React.FC<{ children: ReactNode }> = ({
       });
 
       if (completedRecording) {
-        setRecordings((prev) => {
-          if (!completedRecording) {
-            return prev;
-          }
-          return [completedRecording, ...prev];
-        });
+        setRecordings((prev) => [completedRecording!, ...prev]);
+        transcribeRecordingAsync(completedRecording);
       }
 
       recordingStateRef.current = 'idle';
@@ -161,7 +208,7 @@ export const RecordingProvider: React.FC<{ children: ReactNode }> = ({
       Alert.alert('Recording Error', 'Unable to stop recording.');
       return undefined;
     }
-  }, [recordings.length]);
+  }, [recordings.length, transcribeRecordingAsync]);
 
   const cancelRecording = useCallback(async () => {
     if (recordingStateRef.current === 'idle') {

@@ -1,0 +1,1 @@
+export const DEEPGRAM_API_KEY = '785686d8f405cfd1e506384558dddd68b9b6c1c7'
