@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -8,7 +8,7 @@ import {
   SafeAreaView,
   Image,
 } from 'react-native';
-import { MaterialIcons } from '@react-native-vector-icons/material-icons';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTheme } from '../contexts/ThemeContext';
@@ -23,19 +23,76 @@ type HomeScreenNavigationProp = NativeStackNavigationProp<
   'Home'
 >;
 
+type RecordingState = 'idle' | 'recording' | 'paused';
+
 const HomeScreen: React.FC = () => {
   const { theme, isDark } = useTheme();
   const navigation = useNavigation<HomeScreenNavigationProp>();
   const [selectedMode, setSelectedMode] = useState<RecordingMode>('INTERVIEW');
-  const [isRecording, setIsRecording] = useState(false);
+  const [recordingState, setRecordingState] = useState<RecordingState>('idle');
 
   const styles = createStyles(theme);
 
   const modes: RecordingMode[] = ['VOICE NOTE', 'INTERVIEW', 'LECTURE'];
 
   const handleRecord = () => {
-    setIsRecording(!isRecording);
+    setRecordingState(prev => {
+      switch (prev) {
+        case 'idle':
+          return 'recording';
+        case 'recording':
+          return 'paused';
+        case 'paused':
+        default:
+          return 'recording';
+      }
+    });
   };
+
+  const recordingConfig = useMemo(() => {
+    switch (recordingState) {
+      case 'recording':
+        return {
+          icon: 'pause',
+          label: 'pause',
+          accessibility: 'Stop recording',
+        };
+      case 'paused':
+        return {
+          icon: 'play-arrow',
+          label: 'Resume',
+          accessibility: 'Resume recording',
+        };
+      case 'idle':
+      default:
+        return {
+          icon: 'mic',
+          label: 'Start',
+          accessibility: 'Start recording',
+        };
+    }
+  }, [recordingState]);
+
+  const iconColor =
+    recordingState === 'idle'
+      ? theme.colors.background
+      : theme.colors.onPrimary;
+
+  const statusColor =
+    recordingState === 'recording'
+      ? theme.colors.error
+      : theme.colors.textSecondary;
+
+  const handleCancelRecording = () => {
+    setRecordingState('idle');
+  };
+
+  const handleSaveRecording = () => {
+    // Placeholder for save logic; currently just resets the state
+    setRecordingState('idle');
+  };
+
+  const showActions = recordingState !== 'idle';
 
   return (
     <SafeAreaView style={styles.container}>
@@ -50,52 +107,45 @@ const HomeScreen: React.FC = () => {
           style={styles.iconButton}
           accessibilityLabel="Open navigation menu"
         >
-          <MaterialIcons
-            name="menu"
-            size={22}
-            color={theme.colors.text}
-          />
+          <MaterialIcons name="menu" size={22} color={theme.colors.text} />
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.iconButton}
           onPress={() => navigation.navigate('Settings')}
           accessibilityLabel="Open settings"
         >
-          <MaterialIcons
-            name="settings"
-            size={22}
-            color={theme.colors.text}
-          />
+          <MaterialIcons name="settings" size={22} color={theme.colors.text} />
         </TouchableOpacity>
       </View>
 
       {/* Privacy Message */}
       <View style={styles.privacyContainer}>
         <Text style={styles.privacyText}>
-          Please Be{' '}
-          <Text style={styles.privacyHighlight}>Mindful</Text> Of Other's
-          Privacy
+          Please Be <Text style={styles.privacyHighlight}>Mindful</Text> Of
+          Other's Privacy
         </Text>
       </View>
 
       {/* Glowing Orb */}
       <View style={styles.orbContainer}>
-        <Image source={centerImg} style={styles.orbImage} resizeMode="contain" />
+        <Image
+          source={centerImg}
+          style={styles.orbImage}
+          resizeMode="contain"
+        />
       </View>
 
       {/* Mode Label */}
       <View style={styles.modeLabelContainer}>
         <View style={styles.modeLabel}>
-          <Text style={styles.modeLabelText}>
-            IDEAL FOR MULTIPLE SPEAKERS
-          </Text>
+          <Text style={styles.modeLabelText}>IDEAL FOR MULTIPLE SPEAKERS</Text>
           <View style={styles.modeLabelArrow} />
         </View>
       </View>
 
       {/* Mode Selector */}
       <View style={styles.modeSelector}>
-        {modes.map((mode) => (
+        {modes.map(mode => (
           <TouchableOpacity
             key={mode}
             onPress={() => setSelectedMode(mode)}
@@ -116,19 +166,41 @@ const HomeScreen: React.FC = () => {
       </View>
 
       {/* Recording Button */}
-      <View style={styles.recordButtonContainer}>
+
+      <View style={styles.buttonRow}>
+        {showActions && (
+          <TouchableOpacity
+            onPress={handleCancelRecording}
+            accessibilityLabel="Cancel recording"
+          >
+            <Text style={styles.tertiaryButtonText}>Cancel</Text>
+          </TouchableOpacity>
+        )}
         <TouchableOpacity
-          style={[styles.recordButton, isRecording && styles.recordButtonActive]}
+          style={[
+            styles.recordButton,
+            recordingState !== 'idle' && styles.recordButtonActive,
+            recordingState === 'paused' && styles.recordButtonPaused,
+          ]}
           onPress={handleRecord}
           activeOpacity={0.8}
-          accessibilityLabel={isRecording ? 'Stop recording' : 'Start recording'}
+          accessibilityLabel={recordingConfig.accessibility}
         >
-         <MaterialIcons
-            name="mic"
-            size={36}
-            color={theme.colors.surface}
+          <MaterialIcons
+            name={recordingConfig.icon as never}
+            size={32}
+            color={iconColor}
           />
         </TouchableOpacity>
+
+        {showActions && (
+          <TouchableOpacity
+            onPress={handleSaveRecording}
+            accessibilityLabel="Save recording"
+          >
+            <Text style={styles.tertiaryButtonText}>Save</Text>
+          </TouchableOpacity>
+        )}
       </View>
     </SafeAreaView>
   );
@@ -233,7 +305,14 @@ const createStyles = (theme: Theme) =>
     },
     recordButtonContainer: {
       alignItems: 'center',
-      marginBottom: 24,
+      marginBottom: 32,
+      gap: 10,
+    },
+    buttonRow: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      alignItems: 'center',
+      gap: 32,
     },
     recordButton: {
       width: 72,
@@ -254,10 +333,24 @@ const createStyles = (theme: Theme) =>
     recordButtonActive: {
       backgroundColor: theme.colors.error,
     },
-    microphoneIcon: {
-      width: 40,
-      height: 40,
-      tintColor: theme.colors.text,
+    recordButtonPaused: {
+      backgroundColor: theme.colors.primary,
+    },
+    recordButtonLabel: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: theme.colors.text,
+      textTransform: 'uppercase',
+      letterSpacing: 1,
+    },
+    tertiaryButtonText: {
+      fontSize: 13,
+      fontWeight: '600',
+      color: theme.colors.text,
+      textTransform: 'uppercase',
+    },
+    tertiaryButtonTextOnPrimary: {
+      color: theme.colors.onPrimary,
     },
   });
 
