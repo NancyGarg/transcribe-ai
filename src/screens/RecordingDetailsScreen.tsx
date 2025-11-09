@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   SafeAreaView,
   View,
@@ -14,6 +14,7 @@ import { useRecordingContext } from '../contexts/RecordingContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { Theme } from '../types';
 import { RootStackParamList } from '../navigation/types';
+import { playerService } from '../services/player';
 
 const formatFullDate = (timestamp: number) =>
   new Date(timestamp).toLocaleString();
@@ -39,11 +40,64 @@ const RecordingDetailsScreen: React.FC = () => {
   const { theme, isDark } = useTheme();
   const { recordings } = useRecordingContext();
   const styles = createStyles(theme);
+  const [playState, setPlayState] = useState<'stopped' | 'playing' | 'paused'>(
+    'stopped'
+  );
+  const [currentPosition, setCurrentPosition] = useState(0);
+  const [duration, setDuration] = useState(0);
+
+  useEffect(() => {
+    playerService.onProgress = ({ currentPosition, duration }) => {
+      setCurrentPosition(currentPosition);
+      setDuration(duration);
+    };
+    playerService.onEnd = () => {
+      setPlayState('stopped');
+      setCurrentPosition(0);
+    };
+
+    return () => {
+      playerService.cleanup();
+    };
+  }, []);
 
   const recording = useMemo(
     () => recordings.find((rec) => rec.id === route.params.recordingId),
     [recordings, route.params.recordingId]
   );
+
+  const totalDurationMs = recording?.durationMs ?? duration;
+  const displayDuration = totalDurationMs || duration;
+
+  const formattedProgress = formatDuration(currentPosition * 1000);
+  const formattedTotal = formatDuration(displayDuration);
+
+  const togglePlayback = async () => {
+    if (!recording) {
+      return;
+    }
+
+    try {
+      if (playState === 'stopped') {
+        await playerService.start(recording.filePath);
+        setPlayState('playing');
+      } else if (playState === 'playing') {
+        await playerService.pause();
+        setPlayState('paused');
+      } else if (playState === 'paused') {
+        await playerService.resume();
+        setPlayState('playing');
+      }
+    } catch (error) {
+      console.error('Playback error', error);
+    }
+  };
+
+  const stopPlayback = async () => {
+    await playerService.stop();
+    setPlayState('stopped');
+    setCurrentPosition(0);
+  };
 
   if (!recording) {
     return (
@@ -98,15 +152,41 @@ const RecordingDetailsScreen: React.FC = () => {
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Playback</Text>
-        <View style={styles.playerPlaceholder}>
-          <MaterialIcons
-            name="play-circle"
-            size={48}
-            color={theme.colors.primary}
-          />
-          <Text style={styles.playerText}>
-            Playback controls coming soon
-          </Text>
+        <View style={styles.playerControls}>
+          <TouchableOpacity
+            style={styles.playerButton}
+            onPress={togglePlayback}
+            accessibilityLabel={
+              playState === 'playing' ? 'Pause playback' : 'Play recording'
+            }
+          >
+            <MaterialIcons
+              name={playState === 'playing' ? 'pause' : 'play-arrow'}
+              size={36}
+              color={theme.colors.onPrimary}
+            />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.stopButton}
+            onPress={stopPlayback}
+            accessibilityLabel="Stop playback"
+            disabled={playState === 'stopped'}
+          >
+            <MaterialIcons
+              name="stop"
+              size={24}
+              color={
+                playState === 'stopped'
+                  ? theme.colors.textTertiary
+                  : theme.colors.text
+              }
+            />
+          </TouchableOpacity>
+          <View style={styles.progressBlock}>
+            <Text style={styles.progressText}>
+              {formattedProgress} / {formattedTotal}
+            </Text>
+          </View>
         </View>
       </View>
 
@@ -182,13 +262,35 @@ const createStyles = (theme: Theme) =>
       fontWeight: '600',
       color: theme.colors.text,
     },
-    playerPlaceholder: {
+    playerControls: {
+      flexDirection: 'row',
       alignItems: 'center',
-      gap: 8,
-      paddingVertical: 24,
-      borderRadius: 16,
+      gap: 16,
+    },
+    playerButton: {
+      width: 60,
+      height: 60,
+      borderRadius: 30,
+      backgroundColor: theme.colors.primary,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    stopButton: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
       borderWidth: 1,
       borderColor: theme.colors.border,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    progressBlock: {
+      flex: 1,
+      alignItems: 'flex-end',
+    },
+    progressText: {
+      fontSize: 14,
+      color: theme.colors.textSecondary,
     },
     playerText: {
       fontSize: 14,
