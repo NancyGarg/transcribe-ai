@@ -28,12 +28,12 @@ const formatFullDate = (timestamp: number) =>
 
 const formatDuration = (durationMs: number | undefined) => {
   if (!durationMs) {
-    return '0m 0s';
+    return '00:00';
   }
   const totalSeconds = Math.floor(durationMs / 1000);
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
-  return `${minutes}m ${seconds.toString().padStart(2, '0')}s`;
+  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
 };
 
 type RecordingDetailsRoute = RouteProp<RootStackParamList, 'RecordingDetails'>;
@@ -60,8 +60,8 @@ const RecordingDetailsScreen: React.FC = () => {
 
   useEffect(() => {
     playerService.onProgress = ({ currentPosition, duration }) => {
-      setCurrentPosition(currentPosition);
-      setDuration(duration);
+      setCurrentPosition(currentPosition / 1000);
+      setDuration(duration / 1000);
     };
     playerService.onEnd = () => {
       setPlayState('stopped');
@@ -140,7 +140,8 @@ const RecordingDetailsScreen: React.FC = () => {
                 {
                   width: `${Math.min(
                     100,
-                    (currentPosition * 1000 * 100) / (totalDurationMs || 1)
+                    ((currentPosition || 0) * 100) /
+                      ((totalDurationMs || 1) / 1000)
                   )}%`,
                 },
               ]}
@@ -286,26 +287,28 @@ const createStyles = (theme: Theme) =>
       textAlign: 'center',
     },
     playerCard: {
-      backgroundColor: theme.colors.surface,
+      backgroundColor: theme.colors.cardBackground,
       borderRadius: 20,
-      paddingVertical: 24,
-      paddingHorizontal: 20,
+      paddingVertical: 16,
+      paddingHorizontal: 24,
       gap: 16,
       shadowColor: theme.colors.shadow,
       shadowOffset: { width: 0, height: 6 },
       shadowOpacity: 0.08,
       shadowRadius: 16,
       elevation: 3,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
     },
     scrubberTrack: {
-      height: 6,
-      borderRadius: 3,
-      backgroundColor: theme.colors.surfaceVariant,
+      height: 10,
+      borderRadius: 8,
+      backgroundColor: theme.colors.surface,
       overflow: 'hidden',
     },
     scrubberProgress: {
       height: '100%',
-      backgroundColor: theme.colors.primary,
+      backgroundColor: theme.colors.text,
       borderRadius: 3,
     },
     playerTimes: {
@@ -324,7 +327,7 @@ const createStyles = (theme: Theme) =>
     },
 
     iconCirclePrimary: {
-      backgroundColor: theme.colors.primary,
+      backgroundColor: theme.colors.text,
       justifyContent: 'center',
       alignItems: 'center',
       width: 32,

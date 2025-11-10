@@ -5,6 +5,7 @@ export interface Colors {
   background: string;
   surface: string;
   surfaceVariant: string;
+  cardBackground: string;
   
   // Text colors
   text: string;

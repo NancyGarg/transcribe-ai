@@ -6,6 +6,7 @@ export const lightColors: Colors = {
   background: '#F5F5F0', // Beige/off-white to match design
   surface: '#FFFFFF',
   surfaceVariant: '#F5F5F5',
+  cardBackground: '#EDEDE3',
   
   // Text colors
   text: '#000000',
@@ -13,7 +14,7 @@ export const lightColors: Colors = {
   textTertiary: '#999999',
   
   // Primary colors
-  primary: '#007AFF',
+  primary: '#3ABA16',
   primaryVariant: '#0051D5',
   onPrimary: '#FFFFFF',
   
