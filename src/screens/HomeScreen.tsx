@@ -376,13 +376,14 @@ const createStyles = (theme: Theme) =>
     },
     buttonRow: {
       flexDirection: 'row',
-      justifyContent: 'space-between',
+    justifyContent: 'center',
       alignItems: 'center',
-      gap: 24,
+      gap: 32,
       paddingHorizontal: 32,
+
     },
     actionContainer: {
-      width: 88,
+      width: 78,
       alignItems: 'center',
     },
     disabledAction: {
@@ -391,7 +392,6 @@ const createStyles = (theme: Theme) =>
     recordButtonWrapper: {
       alignItems: 'center',
       justifyContent: 'center',
-      flex: 1,
     },
     recordButton: {
       width: 72,
@@ -411,9 +411,10 @@ const createStyles = (theme: Theme) =>
     },
     recordButtonActive: {
       backgroundColor: theme.colors.error,
+      borderRadius: 27,
     },
     recordButtonPaused: {
-      backgroundColor: theme.colors.primary,
+      backgroundColor: theme.colors.text,
     },
     recordButtonLabel: {
       fontSize: 14,
