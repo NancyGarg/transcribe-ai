@@ -17,8 +17,11 @@ import { RootStackParamList } from '../navigation/types';
 import { useRecordingContext } from '../contexts/RecordingContext';
 import { RecordingState } from '../types/recording';
 import LoadingOverlay from '../components/modals/LoadingOverlay';
+import LottieAnimation from '../components/animations/LottieAnimation';
 
 const centerImg = require('../../assets/homeScreen/centerImage/centerImg.png');
+
+const recordingLottie = require('../../assets/lottie/recording.json');
 
 type RecordingMode = 'VOICE NOTE' | 'INTERVIEW' | 'LECTURE';
 type HomeScreenNavigationProp = NativeStackNavigationProp<
@@ -159,11 +162,22 @@ const HomeScreen: React.FC = () => {
 
       {/* Glowing Orb */}
       <View style={styles.orbContainer}>
+        <View style={styles.recordingAnimationContainer}>
         <Image
           source={centerImg}
           style={styles.orbImage}
           resizeMode="contain"
         />
+      {recordingState !== 'idle' && <LottieAnimation
+          source={recordingLottie}
+          autoPlay={false}
+          loop={true}
+           style={styles.recordingAnimation}
+           playAnimation={recordingState === 'recording'}
+        />}
+
+        </View>
+       
         {recordingState !== 'idle' && (
           <View style={styles.liveContainer}>
         
@@ -305,11 +319,23 @@ const createStyles = (theme: Theme) =>
       flex: 1,
       paddingTop: 100,
       alignItems: 'center',
+
+    },
+    recordingAnimationContainer:{
+justifyContent: 'center',
+alignItems: 'center',
+      position: 'relative',
+ 
     },
     orbImage: {
       width: '80%',
       maxWidth: 320,
       aspectRatio: 1,
+    },
+    recordingAnimation: {
+      width: 296,
+      height: 296,
+      position: 'absolute',
     },
     liveContainer: {
       position: 'absolute',
