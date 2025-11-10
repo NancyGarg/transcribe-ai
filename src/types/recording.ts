@@ -1,5 +1,12 @@
 export type RecordingState = 'idle' | 'recording' | 'paused';
 
+export interface TranscriptSegment {
+  id: string;
+  startMs: number;
+  endMs: number;
+  text: string;
+}
+
 export interface RecordingEntry {
   id: string;
   title: string;
@@ -8,6 +15,7 @@ export interface RecordingEntry {
   createdAt: number;
   updatedAt: number;
   transcript?: string;
+  transcriptSegments?: TranscriptSegment[];
   status: 'pending' | 'processing' | 'completed' | 'failed';
   errorMessage?: string;
 }

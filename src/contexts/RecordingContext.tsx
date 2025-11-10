@@ -140,7 +140,7 @@ export const RecordingProvider: React.FC<{ children: ReactNode }> = ({
       );
 
       try {
-        const transcript = await transcribeAudio(entry.filePath);
+        const { transcript, segments } = await transcribeAudio(entry.filePath);
         setRecordings((prev) =>
           prev.map((rec) =>
             rec.id === entry.id
@@ -148,6 +148,7 @@ export const RecordingProvider: React.FC<{ children: ReactNode }> = ({
                   ...rec,
                   status: 'completed',
                   transcript,
+                  transcriptSegments: segments,
                   updatedAt: Date.now(),
                 }
               : rec
@@ -166,6 +167,7 @@ export const RecordingProvider: React.FC<{ children: ReactNode }> = ({
                   ...rec,
                   status: 'failed',
                   errorMessage,
+                  transcriptSegments: undefined,
                   updatedAt: Date.now(),
                 }
               : rec

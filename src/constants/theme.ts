@@ -10,7 +10,7 @@ export const lightColors: Colors = {
   
   // Text colors
   text: '#1F251A',
-  textSecondary: '#A7A7A7',
+  textSecondary: '#666B61',
   textTertiary: '#999999',
   
   // Primary colors

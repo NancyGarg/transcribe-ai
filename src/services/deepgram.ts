@@ -1,4 +1,5 @@
 import { DEEPGRAM_API_KEY } from '../config/env';
+import { TranscriptSegment } from '../types/recording';
 
 const DEEPGRAM_URL =
   'https://api.deepgram.com/v1/listen?model=nova-2&smart_format=true';
@@ -13,7 +14,12 @@ export class DeepgramError extends Error {
 const normalizeFileUri = (filePath: string) =>
   filePath.startsWith('file://') ? filePath : `file://${filePath}`;
 
-export async function transcribeAudio(filePath: string): Promise<string> {
+export interface TranscriptResult {
+  transcript: string;
+  segments: TranscriptSegment[];
+}
+
+export async function transcribeAudio(filePath: string): Promise<TranscriptResult> {
   if (!DEEPGRAM_API_KEY) {
     throw new DeepgramError('Deepgram API key is not configured.');
   }
@@ -36,6 +42,9 @@ export async function transcribeAudio(filePath: string): Promise<string> {
     body: formData,
   });
 
+
+
+
   if (!response.ok) {
     const errorBody = await response.text();
     throw new DeepgramError(
@@ -45,14 +54,46 @@ export async function transcribeAudio(filePath: string): Promise<string> {
 
   const payload = await response.json();
 
-  const transcript =
-    payload?.results?.channels?.[0]?.alternatives?.[0]?.paragraphs?.transcript ??
-    payload?.results?.channels?.[0]?.alternatives?.[0]?.transcript ??
-    '';
+  console.log('response*****', payload);
 
-  if (!transcript) {
+  const alternative =
+    payload?.results?.channels?.[0]?.alternatives?.[0] ?? undefined;
+  const paragraphs = alternative?.paragraphs?.paragraphs ?? [];
+
+  const segments: TranscriptSegment[] = paragraphs.flatMap(
+    (paragraph: any, idx: number) => {
+      const sentences = paragraph?.sentences ?? [];
+      if (sentences.length === 0) {
+        return [
+          {
+            id: `segment-${idx}`,
+            startMs: Math.floor((paragraph?.start ?? 0) * 1000),
+            endMs: Math.floor((paragraph?.end ?? 0) * 1000),
+            text: (paragraph?.text ?? '').trim(),
+          },
+        ];
+      }
+
+      return sentences.map((sentence: any, sentenceIdx: number) => ({
+        id: `segment-${idx}-${sentenceIdx}`,
+        startMs: Math.floor((sentence?.start ?? paragraph?.start ?? 0) * 1000),
+        endMs: Math.floor((sentence?.end ?? paragraph?.end ?? 0) * 1000),
+        text: (sentence?.text ?? '').trim(),
+      }));
+    }
+  );
+
+  const fallbackTranscript = alternative?.transcript ?? '';
+  const transcriptText = segments.length
+    ? segments.map((segment) => segment.text).join(' ')
+    : fallbackTranscript;
+
+  if (!transcriptText) {
     throw new DeepgramError('No transcript returned from Deepgram.');
   }
 
-  return transcript.trim();
+  return {
+    transcript: transcriptText.trim(),
+    segments,
+  };
 }

@@ -12,6 +12,7 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useRecordingContext } from '../contexts/RecordingContext';
+import { TranscriptSegment } from '../types/recording';
 import { useTheme } from '../contexts/ThemeContext';
 import { Theme } from '../types';
 import { RootStackParamList } from '../navigation/types';
@@ -102,6 +103,8 @@ const RecordingDetailsScreen: React.FC = () => {
   const formattedProgress = formatDuration(currentPosition * 1000);
   const formattedTotal = formatDuration(totalDurationMs);
   const formattedDuration = formatDurationForDisplay(totalDurationMs);
+  const transcriptSegments = recording?.transcriptSegments ?? [];
+  const renderTranscript = transcriptSegments.length > 0;
 
   const togglePlayback = async () => {
     if (!recording) {
@@ -251,10 +254,27 @@ const RecordingDetailsScreen: React.FC = () => {
           </View>
         </View>:null}
 
-        <View style={styles.sectionCard}>
-          <Text style={styles.sectionTitle}>{selectedTab}</Text>
+        <View>
           {selectedTab === 'Transcription' ? (
-            recording.transcript ? (
+            renderTranscript ? (
+              <View style={styles.transcriptList}>
+                {transcriptSegments.map((segment: TranscriptSegment) => (
+                  <View key={segment.id} >
+                    <View style={styles.transcriptTimeBadge}>
+                      <MaterialIcons
+                        name="circle"
+                        size={6}
+                        color={theme.colors.textSecondary}
+                      />
+                      <Text style={styles.transcriptTimeText}>
+                        {formatDuration(segment.startMs)}
+                      </Text>
+                    </View>
+                    <Text style={styles.transcriptBody}>{segment.text}</Text>
+                  </View>
+                ))}
+              </View>
+            ) : recording.transcript ? (
               <Text style={styles.transcriptBody}>{recording.transcript}</Text>
             ) : (
               <Text style={styles.comingSoonText}>
@@ -403,12 +423,6 @@ const createStyles = (theme: Theme) =>
       fontSize: 13,
       color: theme.colors.textSecondary,
     },
-    sectionCard: {
-      backgroundColor: theme.colors.surface,
-      borderRadius: 16,
-      padding: 20,
-      gap: 12,
-    },
     sectionHeaderRow: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -451,9 +465,25 @@ const createStyles = (theme: Theme) =>
       fontWeight: '600',
     },
     transcriptBody: {
-      fontSize: 15,
+      fontSize: 14,
       lineHeight: 22,
-      color: theme.colors.text,
+      paddingLeft:16,
+      color: theme.colors.textSecondary,
+    },
+    transcriptList: {
+      gap: 16,
+    },
+   
+    transcriptTimeBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      paddingVertical: 4,
+      paddingLeft:4
+    },
+    transcriptTimeText: {
+      fontSize: 13,
+      color: theme.colors.textTertiary,
     },
   });
 
