@@ -26,6 +26,7 @@ interface RecordingContextValue {
   stopRecording: () => Promise<RecordingEntry | undefined>;
   cancelRecording: () => Promise<void>;
   clearRecordings: () => void;
+  deleteRecording: (recordingId: string) => Promise<void>;
 }
 
 const RecordingContext = createContext<RecordingContextValue | undefined>(
@@ -228,6 +229,20 @@ export const RecordingProvider: React.FC<{ children: ReactNode }> = ({
     setRecordings([]);
   }, []);
 
+  const deleteRecording = useCallback(async (recordingId: string) => {
+    setRecordings((prev) => prev.filter((rec) => rec.id !== recordingId));
+
+    if (activeRecording?.id === recordingId) {
+      try {
+        await recorderService.stop();
+      } catch (error) {
+        // ignore stop errors
+      }
+      recordingStateRef.current = 'idle';
+      setActiveRecording(undefined);
+    }
+  }, [activeRecording]);
+
   const value = useMemo<RecordingContextValue>(() => ({
     recordings,
     activeRecording,
@@ -237,6 +252,7 @@ export const RecordingProvider: React.FC<{ children: ReactNode }> = ({
     stopRecording,
     cancelRecording,
     clearRecordings,
+    deleteRecording,
   }), [
     recordings,
     activeRecording,
@@ -246,6 +262,7 @@ export const RecordingProvider: React.FC<{ children: ReactNode }> = ({
     stopRecording,
     cancelRecording,
     clearRecordings,
+    deleteRecording,
   ]);
 
   return (

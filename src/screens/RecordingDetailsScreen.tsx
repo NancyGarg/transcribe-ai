@@ -49,7 +49,7 @@ const RecordingDetailsScreen: React.FC = () => {
   const route = useRoute<RecordingDetailsRoute>();
   const navigation = useNavigation<RecordingDetailsNav>();
   const { theme, isDark } = useTheme();
-  const { recordings } = useRecordingContext();
+  const { recordings, deleteRecording } = useRecordingContext();
   const styles = createStyles(theme);
   const [playState, setPlayState] = useState<'stopped' | 'playing' | 'paused'>(
     'stopped'
@@ -133,6 +133,26 @@ const RecordingDetailsScreen: React.FC = () => {
         backgroundColor={styles.container.backgroundColor}
       />
      
+      <View style={styles.headerRow}>
+        <TouchableOpacity
+          style={styles.iconButton}
+          onPress={() => navigation.goBack()}
+          accessibilityLabel="Go back"
+        >
+          <MaterialIcons name="arrow-back" size={24} color={theme.colors.text} />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.iconButton}
+          onPress={async () => {
+            await deleteRecording(recording.id);
+            navigation.goBack();
+          }}
+          accessibilityLabel="Delete recording"
+        >
+          <MaterialIcons name="delete-outline" size={24} color={theme.colors.error} />
+        </TouchableOpacity>
+      </View>
+
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -266,13 +286,12 @@ const createStyles = (theme: Theme) =>
       paddingVertical: 32,
       gap: 24,
     },
-    header: {
+    headerRow: {
       flexDirection: 'row',
-      alignItems: 'center',
+      justifyContent: 'space-between',
       paddingHorizontal: 20,
       paddingTop: 16,
       paddingBottom: 8,
-      gap: 16,
     },
     iconButton: {
       width: 40,
