@@ -49,7 +49,7 @@ const RecordingDetailsScreen: React.FC = () => {
   const route = useRoute<RecordingDetailsRoute>();
   const navigation = useNavigation<RecordingDetailsNav>();
   const { theme, isDark } = useTheme();
-  const { recordings, deleteRecording } = useRecordingContext();
+  const { recordings } = useRecordingContext();
   const styles = createStyles(theme);
   const [playState, setPlayState] = useState<'stopped' | 'playing' | 'paused'>(
     'stopped'
@@ -60,7 +60,7 @@ const RecordingDetailsScreen: React.FC = () => {
 
   useEffect(() => {
     playerService.onProgress = ({ currentPosition, duration }) => {
-      setCurrentPosition(currentPosition/1000);
+      setCurrentPosition(currentPosition);
       setDuration(duration);
     };
     playerService.onEnd = () => {
@@ -101,12 +101,6 @@ const RecordingDetailsScreen: React.FC = () => {
     } catch (error) {
       console.error('Playback error', error);
     }
-  };
-
-  const stopPlayback = async () => {
-    await playerService.stop();
-    setPlayState('stopped');
-    setCurrentPosition(0);
   };
 
   if (!recording) {
@@ -326,7 +320,7 @@ const createStyles = (theme: Theme) =>
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      gap:32
+      gap: 32,
     },
 
     iconCirclePrimary: {

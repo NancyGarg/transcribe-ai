@@ -1,6 +1,6 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { createNativeStackNavigator, NativeStackNavigationOptions } from '@react-navigation/native-stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { enableScreens } from 'react-native-screens';
 import {
@@ -10,13 +10,88 @@ import {
   useTheme,
   useRecordingContext,
 } from './src/contexts';
-import { HomeScreen, SettingsScreen, LibraryScreen, RecordingDetailsScreen } from './src/screens';
+import {
+  HomeScreen,
+  SettingsScreen,
+  LibraryScreen,
+  RecordingDetailsScreen,
+} from './src/screens';
 import { RootStackParamList } from './src/navigation/types';
 import Header from './src/components/Header';
+import ConfirmModal from './src/components/modals/ConfirmModal';
+import Toast from 'react-native-toast-message';
+import { showSuccessToast, showErrorToast } from './src/services/toast';
 
 enableScreens();
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
+
+interface HeaderConfiguratorProps {
+  title: string;
+  hasDelete?: boolean;
+}
+
+const createScreenOptions = (
+  theme: ReturnType<typeof useTheme>['theme'],
+  navigationOptions?: HeaderConfiguratorProps
+): NativeStackNavigationOptions => ({
+  headerShown: true,
+  header: ({ navigation, route }) => (
+    <ScreenHeader
+      title={navigationOptions?.title ?? route.name}
+      navigation={navigation}
+      route={route}
+      hasDelete={navigationOptions?.hasDelete}
+    />
+  ),
+  contentStyle: { backgroundColor: theme.colors.background },
+});
+
+const ScreenHeader: React.FC<{
+  title: string;
+  navigation: any;
+  route: any;
+  hasDelete?: boolean;
+}> = ({ title, navigation, route, hasDelete }) => {
+  const { deleteRecording } = useRecordingContext();
+  const [confirmVisible, setConfirmVisible] = useState(false);
+
+  const handleDelete = async () => {
+    const recordingId = route.params?.recordingId;
+    if (!recordingId) {
+      setConfirmVisible(false);
+      return;
+    }
+    try {
+      await deleteRecording(recordingId);
+      showSuccessToast('Recording deleted');
+      setConfirmVisible(false);
+      navigation.goBack();
+    } catch (error) {
+      showErrorToast('Unable to delete recording');
+    }
+  };
+
+  return (
+    <>
+      <Header
+        title={title}
+        canGoBack={navigation.canGoBack()}
+        onBackPress={navigation.goBack}
+        rightActionIcon={hasDelete ? 'delete-outline' : undefined}
+        onRightActionPress={hasDelete ? () => setConfirmVisible(true) : undefined}
+      />
+      <ConfirmModal
+        visible={confirmVisible}
+        title="Delete recording"
+        message="Are you sure you want to delete this recording? This action cannot be undone."
+        confirmLabel="Delete"
+        onConfirm={handleDelete}
+        onCancel={() => setConfirmVisible(false)}
+      />
+    </>
+  );
+};
 
 const AppNavigator: React.FC = () => {
   const { theme } = useTheme();
@@ -41,10 +116,7 @@ const AppNavigator: React.FC = () => {
   return (
     <NavigationContainer theme={navigationTheme}>
       <Stack.Navigator
-        screenOptions={{
-          headerShown: false,
-          contentStyle: { backgroundColor: theme.colors.background },
-        }}
+        screenOptions={{ headerShown: false, contentStyle: { backgroundColor: theme.colors.background } }}
       >
         <Stack.Screen
           name="Home"
@@ -54,48 +126,19 @@ const AppNavigator: React.FC = () => {
         <Stack.Screen
           name="Settings"
           component={SettingsScreen}
-          options={({ navigation }) => ({
-            headerShown: true,
-            header: () => (
-              <Header
-                title="Settings"
-                canGoBack={navigation.canGoBack()}
-                onBackPress={navigation.goBack}
-              />
-            ),
-          })}
+          options={createScreenOptions(theme, { title: 'Settings' })}
         />
         <Stack.Screen
           name="Library"
           component={LibraryScreen}
-          options={({ navigation }) => ({
-            headerShown: true,
-            header: () => (
-              <Header
-                title="Library"
-                canGoBack={navigation.canGoBack()}
-                onBackPress={navigation.goBack}
-              />
-            ),
-          })}
+          options={createScreenOptions(theme, { title: 'Library' })}
         />
         <Stack.Screen
           name="RecordingDetails"
           component={RecordingDetailsScreen}
-          options={({ navigation, route }) => ({
-            headerShown: true,
-            header: () => (
-              <Header
-                title="Recording Details"
-                canGoBack={navigation.canGoBack()}
-                onBackPress={navigation.goBack}
-                rightActionIcon="delete-outline"
-                onRightActionPress={async () => {
-                  await deleteRecording(route.params.recordingId);
-                  navigation.goBack();
-                }}
-              />
-            ),
+          options={createScreenOptions(theme, {
+            title: 'Recording Details',
+            hasDelete: true,
           })}
         />
       </Stack.Navigator>
@@ -110,6 +153,7 @@ function App() {
         <SafeAreaProvider>
           <RecordingProvider>
             <AppNavigator />
+            <Toast />
           </RecordingProvider>
         </SafeAreaProvider>
       </AppProvider>

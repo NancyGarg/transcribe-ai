@@ -16,6 +16,7 @@ import {
   RecordingState,
 } from '../types/recording';
 import { transcribeAudio, DeepgramError } from '../services/deepgram';
+import { showErrorToast, showSuccessToast } from '../services/toast';
 
 interface RecordingContextValue {
   recordings: RecordingEntry[];
@@ -150,6 +151,7 @@ export const RecordingProvider: React.FC<{ children: ReactNode }> = ({
               : rec
           )
         );
+        showSuccessToast('Transcription ready');
       } catch (error) {
         const errorMessage =
           error instanceof DeepgramError
@@ -167,6 +169,7 @@ export const RecordingProvider: React.FC<{ children: ReactNode }> = ({
               : rec
           )
         );
+        showErrorToast('Transcription failed', errorMessage);
       }
     },
     []
