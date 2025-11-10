@@ -203,39 +203,58 @@ const HomeScreen: React.FC = () => {
       {/* Recording Button */}
 
       <View style={styles.buttonRow}>
-        {showActions && (
+       {showActions && <View style={styles.actionContainer}>
           <TouchableOpacity
             onPress={handleCancelRecording}
             accessibilityLabel="Cancel recording"
+            disabled={!showActions}
+            style={!showActions ? styles.disabledAction : undefined}
           >
-            <Text style={styles.tertiaryButtonText}>Cancel</Text>
+            <Text
+              style={[
+                styles.tertiaryButtonText,
+                !showActions && styles.tertiaryButtonTextDisabled,
+              ]}
+            >
+              Cancel
+            </Text>
           </TouchableOpacity>
-        )}
-        <TouchableOpacity
-          style={[
-            styles.recordButton,
-            recordingState !== 'idle' && styles.recordButtonActive,
-            recordingState === 'paused' && styles.recordButtonPaused,
-          ]}
-          onPress={handleRecord}
-          activeOpacity={0.8}
-          accessibilityLabel={recordingConfig.accessibility}
-        >
-          <MaterialIcons
-            name={recordingConfig.icon as never}
-            size={32}
-            color={iconColor}
-          />
-        </TouchableOpacity>
-
-        {showActions && (
+        </View>}
+        <View style={styles.recordButtonWrapper}>
           <TouchableOpacity
-            onPress={handleSaveRecording}
-            accessibilityLabel="Save recording"
+            style={[
+              styles.recordButton,
+              recordingState !== 'idle' && styles.recordButtonActive,
+              recordingState === 'paused' && styles.recordButtonPaused,
+            ]}
+            onPress={handleRecord}
+            activeOpacity={0.8}
+            accessibilityLabel={recordingConfig.accessibility}
           >
-            <Text style={styles.tertiaryButtonText}>Save</Text>
+            <MaterialIcons
+              name={recordingConfig.icon as never}
+              size={32}
+              color={iconColor}
+            />
           </TouchableOpacity>
-        )}
+        </View>
+      {showActions && <View style={styles.actionContainer}>
+            <TouchableOpacity
+              onPress={handleSaveRecording}
+              accessibilityLabel="Save recording"
+              disabled={!showActions}
+              style={!showActions ? styles.disabledAction : undefined}
+            >
+              <Text
+                style={[
+                  styles.tertiaryButtonText,
+                  !showActions && styles.tertiaryButtonTextDisabled,
+                ]}
+              >
+                Save
+              </Text>
+            </TouchableOpacity>
+          </View>}
       </View>
     </SafeAreaView>
   );
@@ -357,9 +376,22 @@ const createStyles = (theme: Theme) =>
     },
     buttonRow: {
       flexDirection: 'row',
-      justifyContent: 'center',
+      justifyContent: 'space-between',
       alignItems: 'center',
-      gap: 32,
+      gap: 24,
+      paddingHorizontal: 32,
+    },
+    actionContainer: {
+      width: 88,
+      alignItems: 'center',
+    },
+    disabledAction: {
+      opacity: 0.3,
+    },
+    recordButtonWrapper: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      flex: 1,
     },
     recordButton: {
       width: 72,
@@ -401,6 +433,9 @@ const createStyles = (theme: Theme) =>
     },
     tertiaryButtonTextOnPrimary: {
       color: theme.colors.onPrimary,
+    },
+    tertiaryButtonTextDisabled: {
+      color: theme.colors.textTertiary,
     },
   });
 
