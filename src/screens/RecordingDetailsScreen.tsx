@@ -36,6 +36,26 @@ const formatDuration = (durationMs: number | undefined) => {
   return `${minutes}:${seconds.toString().padStart(2, '0')}`;
 };
 
+const formatDurationForDisplay = (durationMs: number | undefined) => {
+  if (!durationMs) {
+    return '00:00:00';
+  }
+  const hours = Math.floor(durationMs / 3600000);
+  const minutes = Math.floor((durationMs % 3600000) / 60000);
+  const seconds = Math.floor((durationMs % 60000) / 1000);
+  if (hours > 0) {
+    return `${hours.toString().padStart(2, '0')}h ${minutes
+      .toString()
+      .padStart(2, '0')}m ${seconds.toString().padStart(2, '0')}s`;
+  } else if (minutes > 0) {
+    return `${minutes.toString().padStart(2, '0')}m ${seconds
+      .toString()
+      .padStart(2, '0')}s`;
+  } else {
+    return `${seconds.toString().padStart(2, '0')}s`;
+  }
+};
+
 type RecordingDetailsRoute = RouteProp<RootStackParamList, 'RecordingDetails'>;
 type RecordingDetailsNav = NativeStackNavigationProp<
   RootStackParamList,
@@ -52,7 +72,7 @@ const RecordingDetailsScreen: React.FC = () => {
   const { recordings } = useRecordingContext();
   const styles = createStyles(theme);
   const [playState, setPlayState] = useState<'stopped' | 'playing' | 'paused'>(
-    'stopped'
+    'stopped',
   );
   const [currentPosition, setCurrentPosition] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -74,13 +94,14 @@ const RecordingDetailsScreen: React.FC = () => {
   }, []);
 
   const recording = useMemo(
-    () => recordings.find((rec) => rec.id === route.params.recordingId),
-    [recordings, route.params.recordingId]
+    () => recordings.find(rec => rec.id === route.params.recordingId),
+    [recordings, route.params.recordingId],
   );
 
   const totalDurationMs = recording?.durationMs ?? duration * 1000;
   const formattedProgress = formatDuration(currentPosition * 1000);
   const formattedTotal = formatDuration(totalDurationMs);
+  const formattedDuration = formatDurationForDisplay(totalDurationMs);
 
   const togglePlayback = async () => {
     if (!recording) {
@@ -126,8 +147,7 @@ const RecordingDetailsScreen: React.FC = () => {
         barStyle={isDark ? 'light-content' : 'dark-content'}
         backgroundColor={styles.container.backgroundColor}
       />
-     
-     
+
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -141,7 +161,7 @@ const RecordingDetailsScreen: React.FC = () => {
                   width: `${Math.min(
                     100,
                     ((currentPosition || 0) * 100) /
-                      ((totalDurationMs || 1) / 1000)
+                      ((totalDurationMs || 1) / 1000),
                   )}%`,
                 },
               ]}
@@ -152,11 +172,7 @@ const RecordingDetailsScreen: React.FC = () => {
             <Text style={styles.timeText}>{formattedTotal}</Text>
           </View>
           <View style={styles.playerButtonsRow}>
-            <TouchableOpacity
-          
-              onPress={() => {}}
-              accessibilityLabel="Skip back"
-            >
+            <TouchableOpacity onPress={() => {}} accessibilityLabel="Skip back">
               <MaterialIcons
                 name="replay-10"
                 size={24}
@@ -177,7 +193,6 @@ const RecordingDetailsScreen: React.FC = () => {
               />
             </TouchableOpacity>
             <TouchableOpacity
-    
               onPress={() => {}}
               accessibilityLabel="Skip forward"
             >
@@ -191,10 +206,13 @@ const RecordingDetailsScreen: React.FC = () => {
         </View>
 
         <View style={styles.tabBar}>
-          {TABS.map((tab) => (
+          {TABS.map(tab => (
             <TouchableOpacity
               key={tab}
-              style={[styles.tabButton, tab === selectedTab && styles.tabButtonActive]}
+              style={[
+                styles.tabButton,
+                tab === selectedTab && styles.tabButtonActive,
+              ]}
               onPress={() => setSelectedTab(tab)}
             >
               <Text
@@ -209,29 +227,30 @@ const RecordingDetailsScreen: React.FC = () => {
           ))}
         </View>
 
-        <View style={styles.summaryCard}>
+      {selectedTab === 'Summary' ?  <View style={styles.summaryCard}>
           <Text style={styles.title}>{recording.title}</Text>
           <View style={styles.metaRow}>
             <View style={styles.metaGroup}>
               <MaterialIcons
-                name="event"
-                size={18}
+                name="calendar-today"
+                size={14}
                 color={theme.colors.textSecondary}
               />
-              <Text style={styles.metaText}>{formatFullDate(recording.createdAt)}</Text>
+              <Text style={styles.metaText}>
+                {formatFullDate(recording.createdAt)}
+              </Text>
             </View>
             <View style={styles.metaGroup}>
               <MaterialIcons
                 name="schedule"
-                size={18}
+                size={14}
                 color={theme.colors.textSecondary}
               />
-              <Text style={styles.metaText}>{formattedTotal}</Text>
+              <Text style={styles.metaText}>{formattedDuration}</Text>
             </View>
           </View>
-        </View>
+        </View>:null}
 
-      
         <View style={styles.sectionCard}>
           <Text style={styles.sectionTitle}>{selectedTab}</Text>
           {selectedTab === 'Transcription' ? (
@@ -260,7 +279,7 @@ const createStyles = (theme: Theme) =>
     scrollContent: {
       paddingHorizontal: 20,
       paddingVertical: 32,
-      gap: 24,
+      gap: 32,
     },
     headerRow: {
       flexDirection: 'row',
@@ -334,51 +353,51 @@ const createStyles = (theme: Theme) =>
       height: 32,
       borderRadius: 12,
     },
- 
+
     tabBar: {
       flexDirection: 'row',
-      backgroundColor: theme.colors.surface,
-      borderRadius: 18,
+      backgroundColor: theme.colors.cardBackground,
+      borderRadius: 12,
       padding: 4,
       alignSelf: 'stretch',
     },
     tabButton: {
       flex: 1,
-      paddingVertical: 10,
-      borderRadius: 14,
+      paddingVertical: 12,
+      borderRadius: 8,
       alignItems: 'center',
       justifyContent: 'center',
     },
     tabButtonActive: {
-      backgroundColor: `${theme.colors.primary}25`,
+      backgroundColor: theme.colors.surface,
     },
     tabLabel: {
       fontSize: 14,
-      fontWeight: '600',
       color: theme.colors.textSecondary,
     },
     tabLabelActive: {
+      fontWeight: '700',
       color: theme.colors.primary,
     },
     summaryCard: {
-      backgroundColor: theme.colors.surface,
-      borderRadius: 16,
-      padding: 20,
+      paddingBottom: 12,
       gap: 12,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.border,
     },
     title: {
-      fontSize: 20,
-      fontWeight: '700',
+      fontSize: 24,
+      fontWeight: '500',
       color: theme.colors.text,
     },
     metaRow: {
       flexDirection: 'row',
-      gap: 16,
+      gap: 12,
     },
     metaGroup: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 6,
+      gap: 4,
     },
     metaText: {
       fontSize: 13,

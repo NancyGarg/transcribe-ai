@@ -9,8 +9,8 @@ export const lightColors: Colors = {
   cardBackground: '#EDEDE3',
   
   // Text colors
-  text: '#000000',
-  textSecondary: '#666666',
+  text: '#1F251A',
+  textSecondary: '#A7A7A7',
   textTertiary: '#999999',
   
   // Primary colors
@@ -47,6 +47,7 @@ export const darkColors: Colors = {
   background: '#1A1A1A', // Dark gray instead of pure black for better contrast
   surface: '#2C2C2E',
   surfaceVariant: '#3A3A3C',
+  cardBackground:'#ffffff30',
   
   // Text colors
   text: '#FFFFFF',
@@ -54,9 +55,9 @@ export const darkColors: Colors = {
   textTertiary: '#EBEBF599',
   
   // Primary colors
-  primary: '#0A84FF',
+  primary: '#3ABA16',
   primaryVariant: '#409CFF',
-  onPrimary: '#FFFFFF',
+  onPrimary: '#2C2C2E',
   
   // Secondary colors
   secondary: '#5E5CE6',
