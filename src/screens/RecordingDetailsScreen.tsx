@@ -133,26 +133,7 @@ const RecordingDetailsScreen: React.FC = () => {
         backgroundColor={styles.container.backgroundColor}
       />
      
-      <View style={styles.headerRow}>
-        <TouchableOpacity
-          style={styles.iconButton}
-          onPress={() => navigation.goBack()}
-          accessibilityLabel="Go back"
-        >
-          <MaterialIcons name="arrow-back" size={24} color={theme.colors.text} />
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.iconButton}
-          onPress={async () => {
-            await deleteRecording(recording.id);
-            navigation.goBack();
-          }}
-          accessibilityLabel="Delete recording"
-        >
-          <MaterialIcons name="delete-outline" size={24} color={theme.colors.error} />
-        </TouchableOpacity>
-      </View>
-
+     
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}

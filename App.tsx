@@ -3,9 +3,16 @@ import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { enableScreens } from 'react-native-screens';
-import { AppProvider, ThemeProvider, RecordingProvider, useTheme } from './src/contexts';
+import {
+  AppProvider,
+  ThemeProvider,
+  RecordingProvider,
+  useTheme,
+  useRecordingContext,
+} from './src/contexts';
 import { HomeScreen, SettingsScreen, LibraryScreen, RecordingDetailsScreen } from './src/screens';
 import { RootStackParamList } from './src/navigation/types';
+import Header from './src/components/Header';
 
 enableScreens();
 
@@ -13,6 +20,7 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 
 const AppNavigator: React.FC = () => {
   const { theme } = useTheme();
+  const { deleteRecording } = useRecordingContext();
 
   const navigationTheme = useMemo(
     () => ({
@@ -34,10 +42,7 @@ const AppNavigator: React.FC = () => {
     <NavigationContainer theme={navigationTheme}>
       <Stack.Navigator
         screenOptions={{
-          headerStyle: {
-            backgroundColor: theme.colors.background,
-          },
-          headerTintColor: theme.colors.text,
+          headerShown: false,
           contentStyle: { backgroundColor: theme.colors.background },
         }}
       >
@@ -49,17 +54,49 @@ const AppNavigator: React.FC = () => {
         <Stack.Screen
           name="Settings"
           component={SettingsScreen}
-          options={{ title: 'Settings' }}
+          options={({ navigation }) => ({
+            headerShown: true,
+            header: () => (
+              <Header
+                title="Settings"
+                canGoBack={navigation.canGoBack()}
+                onBackPress={navigation.goBack}
+              />
+            ),
+          })}
         />
         <Stack.Screen
           name="Library"
           component={LibraryScreen}
-          options={{ title: 'Library' }}
+          options={({ navigation }) => ({
+            headerShown: true,
+            header: () => (
+              <Header
+                title="Library"
+                canGoBack={navigation.canGoBack()}
+                onBackPress={navigation.goBack}
+              />
+            ),
+          })}
         />
         <Stack.Screen
           name="RecordingDetails"
           component={RecordingDetailsScreen}
-          options={{ title: 'Recording Details' }}
+          options={({ navigation, route }) => ({
+            headerShown: true,
+            header: () => (
+              <Header
+                title="Recording Details"
+                canGoBack={navigation.canGoBack()}
+                onBackPress={navigation.goBack}
+                rightActionIcon="delete-outline"
+                onRightActionPress={async () => {
+                  await deleteRecording(route.params.recordingId);
+                  navigation.goBack();
+                }}
+              />
+            ),
+          })}
         />
       </Stack.Navigator>
     </NavigationContainer>
