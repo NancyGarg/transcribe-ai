@@ -51,7 +51,7 @@ export const RecordingProvider: React.FC<{ children: ReactNode }> = ({
         const positionSeconds = Number.isFinite(currentPosition)
           ? currentPosition
           : 0;
-        const segmentMs = Math.max(0, Math.floor(positionSeconds * 1000));
+        const segmentMs = Math.max(0, Math.floor(positionSeconds));
         const durationMs = Math.max(prev.durationMs, segmentMs);
         return {
           ...prev,
