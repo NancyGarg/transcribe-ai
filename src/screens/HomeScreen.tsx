@@ -16,6 +16,7 @@ import { Theme } from '../types';
 import { RootStackParamList } from '../navigation/types';
 import { useRecordingContext } from '../contexts/RecordingContext';
 import { RecordingState } from '../types/recording';
+import LoadingOverlay from '../components/modals/LoadingOverlay';
 
 const centerImg = require('../../assets/homeScreen/centerImage/centerImg.png');
 
@@ -34,6 +35,7 @@ const HomeScreen: React.FC = () => {
     resumeRecording,
     stopRecording,
     cancelRecording,
+    isSavingRecording,
   } = useRecordingContext();
   const navigation = useNavigation<HomeScreenNavigationProp>();
   const [selectedMode, setSelectedMode] = React.useState<RecordingMode>('INTERVIEW');
@@ -120,6 +122,10 @@ const HomeScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.container}>
+      <LoadingOverlay
+        visible={isSavingRecording}
+        message="Saving recording…"
+      />
       <StatusBar
         barStyle={isDark ? 'light-content' : 'dark-content'}
         backgroundColor={styles.container.backgroundColor}

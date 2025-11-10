@@ -21,6 +21,7 @@ import { showErrorToast, showSuccessToast } from '../services/toast';
 interface RecordingContextValue {
   recordings: RecordingEntry[];
   activeRecording?: ActiveRecording;
+  isSavingRecording: boolean;
   startRecording: () => Promise<void>;
   pauseRecording: () => Promise<void>;
   resumeRecording: () => Promise<void>;
@@ -41,6 +42,7 @@ export const RecordingProvider: React.FC<{ children: ReactNode }> = ({
 }) => {
   const [recordings, setRecordings] = useState<RecordingEntry[]>([]);
   const [activeRecording, setActiveRecording] = useState<ActiveRecording>();
+  const [isSavingRecording, setIsSavingRecording] = useState(false);
   const recordingStateRef = useRef<RecordingState>('idle');
 
   useEffect(() => {
@@ -176,13 +178,17 @@ export const RecordingProvider: React.FC<{ children: ReactNode }> = ({
   );
 
   const stopRecording = useCallback(async () => {
+
+
     if (recordingStateRef.current === 'idle') {
       return undefined;
     }
+    setIsSavingRecording(true);
     try {
       const filePath = await recorderService.stop();
       const finishedAt = Date.now();
       let completedRecording: RecordingEntry | undefined;
+  
 
       setActiveRecording((prev) => {
         if (!prev) {
@@ -206,8 +212,10 @@ export const RecordingProvider: React.FC<{ children: ReactNode }> = ({
       }
 
       recordingStateRef.current = 'idle';
+      setIsSavingRecording(false);
       return completedRecording;
     } catch (error) {
+      setIsSavingRecording(false);
       console.error('Failed to stop recording', error);
       Alert.alert('Recording Error', 'Unable to stop recording.');
       return undefined;
@@ -249,6 +257,7 @@ export const RecordingProvider: React.FC<{ children: ReactNode }> = ({
   const value = useMemo<RecordingContextValue>(() => ({
     recordings,
     activeRecording,
+    isSavingRecording,
     startRecording,
     pauseRecording,
     resumeRecording,
@@ -259,6 +268,7 @@ export const RecordingProvider: React.FC<{ children: ReactNode }> = ({
   }), [
     recordings,
     activeRecording,
+    isSavingRecording,
     startRecording,
     pauseRecording,
     resumeRecording,
