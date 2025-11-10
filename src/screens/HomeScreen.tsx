@@ -15,7 +15,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { Theme } from '../types';
 import { RootStackParamList } from '../navigation/types';
 import { useRecordingContext } from '../contexts/RecordingContext';
-import { RecordingState } from '../types/recording';
+import { RecordingState, RecordingMode } from '../types/recording';
 import LoadingOverlay from '../components/modals/LoadingOverlay';
 import LottieAnimation from '../components/animations/LottieAnimation';
 
@@ -23,7 +23,6 @@ const centerImg = require('../../assets/homeScreen/centerImage/centerImg.png');
 
 const recordingLottie = require('../../assets/lottie/recording.json');
 
-type RecordingMode = 'VOICE NOTE' | 'INTERVIEW' | 'LECTURE';
 type HomeScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
   'Home'
@@ -52,7 +51,7 @@ const HomeScreen: React.FC = () => {
   const handleRecord = async () => {
     switch (recordingState) {
       case 'idle':
-        await startRecording();
+        await startRecording(selectedMode);
         break;
       case 'recording':
         await pauseRecording();

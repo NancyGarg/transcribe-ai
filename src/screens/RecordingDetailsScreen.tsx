@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   SafeAreaView,
   View,
@@ -105,6 +105,101 @@ const RecordingDetailsScreen: React.FC = () => {
   const formattedDuration = formatDurationForDisplay(totalDurationMs);
   const transcriptSegments = recording?.transcriptSegments ?? [];
   const renderTranscript = transcriptSegments.length > 0;
+  const isInterviewMode = recording?.mode === 'INTERVIEW';
+
+  const speakerLabels = useMemo(() => {
+    const map = new Map<string, string>();
+    if (!isInterviewMode) {
+      return map;
+    }
+
+    let counter = 1;
+    const fallbackKey = '__fallback__';
+
+    transcriptSegments.forEach(segment => {
+      const key = segment.speaker ?? fallbackKey;
+      if (!map.has(key)) {
+        if (segment.speaker === undefined) {
+          map.set(key, 'Speaker');
+        } else {
+          map.set(key, `Speaker ${counter}`);
+          counter += 1;
+        }
+      }
+    });
+
+    return map;
+  }, [isInterviewMode, transcriptSegments]);
+
+  const getSpeakerLabel = useCallback(
+    (segment: TranscriptSegment) => {
+      if (!isInterviewMode) {
+        return undefined;
+      }
+
+      const fallbackKey = '__fallback__';
+      const key = segment.speaker ?? fallbackKey;
+      return speakerLabels.get(key) ?? 'Speaker';
+    },
+    [isInterviewMode, speakerLabels],
+  );
+
+  const speakerPalette = useMemo(
+    () => [
+      theme.colors.speaker1,
+      theme.colors.speaker2,
+      theme.colors.speaker3,
+      theme.colors.speaker4,
+    ],
+    [theme.colors]
+  );
+
+  const groupedConversation = useMemo(() => {
+    if (!isInterviewMode || transcriptSegments.length === 0) {
+      return [] as Array<{ speakerLabel: string; text: string; color: string }>;
+    }
+
+    const groups: Array<{ speakerLabel: string; text: string; color: string }> = [];
+    const colorMap = new Map<string, string>();
+    let paletteIndex = 0;
+
+    transcriptSegments.forEach(segment => {
+      const label = getSpeakerLabel(segment);
+      if (!label) {
+        return;
+      }
+
+      const trimmedText = segment.text.trim();
+      if (!trimmedText) {
+        return;
+      }
+
+      if (!colorMap.has(label)) {
+        const assignedColor =
+          speakerPalette[paletteIndex % speakerPalette.length] ??
+          theme.colors.primary;
+        colorMap.set(label, assignedColor);
+        paletteIndex += 1;
+      }
+
+      const color = colorMap.get(label) ?? theme.colors.primary;
+
+      const lastGroup = groups[groups.length - 1];
+      if (lastGroup && lastGroup.speakerLabel === label) {
+        lastGroup.text = `${lastGroup.text} ${trimmedText}`.trim();
+      } else {
+        groups.push({ speakerLabel: label, text: trimmedText, color });
+      }
+    });
+
+    return groups;
+  }, [
+    getSpeakerLabel,
+    isInterviewMode,
+    speakerPalette,
+    theme.colors.primary,
+    transcriptSegments,
+  ]);
 
   const togglePlayback = async () => {
     if (!recording) {
@@ -257,23 +352,50 @@ const RecordingDetailsScreen: React.FC = () => {
         <View>
           {selectedTab === 'Transcription' ? (
             renderTranscript ? (
-              <View style={styles.transcriptList}>
-                {transcriptSegments.map((segment: TranscriptSegment) => (
-                  <View key={segment.id} >
-                    <View style={styles.transcriptTimeBadge}>
-                      <MaterialIcons
-                        name="circle"
-                        size={6}
-                        color={theme.colors.textSecondary}
-                      />
-                      <Text style={styles.transcriptTimeText}>
-                        {formatDuration(segment.startMs)}
-                      </Text>
+              isInterviewMode ? (
+                <View style={styles.transcriptList}>
+                  {groupedConversation.map((group, index) => (
+                    <View key={index} style={styles.timelineRow}>
+                      <View style={styles.transcriptTimeBadge}>
+                        <MaterialIcons
+                          name="circle"
+                          size={6}
+                          color={theme.colors.textSecondary}
+                        />
+                        <Text
+                          style={[
+                            styles.conversationSpeaker,
+                            {
+                              color: group.color,
+                            },
+                          ]}
+                        >
+                          {group.speakerLabel}
+                        </Text>
+                      </View>
+                      <Text style={styles.transcriptBody}>{group.text}</Text>
                     </View>
-                    <Text style={styles.transcriptBody}>{segment.text}</Text>
-                  </View>
-                ))}
-              </View>
+                  ))}
+                </View>
+              ) : (
+                <View style={styles.transcriptList}>
+                  {transcriptSegments.map(segment => (
+                    <View key={segment.id} style={styles.timelineRow}>
+                      <View style={styles.transcriptTimeBadge}>
+                        <MaterialIcons
+                          name="circle"
+                          size={6}
+                          color={theme.colors.textSecondary}
+                        />
+                        <Text style={styles.transcriptTimeText}>
+                          {formatDuration(segment.startMs)}
+                        </Text>
+                      </View>
+                      <Text style={styles.transcriptBody}>{segment.text}</Text>
+                    </View>
+                  ))}
+                </View>
+              )
             ) : recording.transcript ? (
               <Text style={styles.transcriptBody}>{recording.transcript}</Text>
             ) : (
@@ -467,23 +589,31 @@ const createStyles = (theme: Theme) =>
     transcriptBody: {
       fontSize: 14,
       lineHeight: 22,
-      paddingLeft:16,
+      paddingLeft: 16,
       color: theme.colors.textSecondary,
     },
     transcriptList: {
       gap: 16,
     },
-   
+    timelineRow: {
+      gap: 8,
+    },
     transcriptTimeBadge: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 6,
       paddingVertical: 4,
-      paddingLeft:4
+      paddingLeft: 4,
     },
     transcriptTimeText: {
       fontSize: 13,
       color: theme.colors.textTertiary,
+    },
+    conversationSpeaker: {
+      fontSize: 13,
+      fontWeight: '700',
+      textTransform: 'uppercase',
+      letterSpacing: 0.4,
     },
   });
 

@@ -14,6 +14,7 @@ import {
   ActiveRecording,
   RecordingEntry,
   RecordingState,
+  RecordingMode,
 } from '../types/recording';
 import { transcribeAudio, DeepgramError } from '../services/deepgram';
 import { showErrorToast, showSuccessToast } from '../services/toast';
@@ -22,7 +23,7 @@ interface RecordingContextValue {
   recordings: RecordingEntry[];
   activeRecording?: ActiveRecording;
   isSavingRecording: boolean;
-  startRecording: () => Promise<void>;
+  startRecording: (mode: RecordingMode) => Promise<void>;
   pauseRecording: () => Promise<void>;
   resumeRecording: () => Promise<void>;
   stopRecording: () => Promise<RecordingEntry | undefined>;
@@ -70,7 +71,7 @@ export const RecordingProvider: React.FC<{ children: ReactNode }> = ({
     };
   }, []);
 
-  const startRecording = useCallback(async () => {
+  const startRecording = useCallback(async (mode: RecordingMode) => {
     if (recordingStateRef.current !== 'idle') {
       return;
     }
@@ -86,6 +87,7 @@ export const RecordingProvider: React.FC<{ children: ReactNode }> = ({
         updatedAt: startedAt,
         durationMs: 0,
         state: 'recording',
+        mode,
       });
     } catch (error) {
       console.error('Failed to start recording', error);
@@ -140,7 +142,9 @@ export const RecordingProvider: React.FC<{ children: ReactNode }> = ({
       );
 
       try {
-        const { transcript, segments } = await transcribeAudio(entry.filePath);
+        const { transcript, segments } = await transcribeAudio(entry.filePath, {
+          diarize: entry.mode === 'INTERVIEW',
+        });
         setRecordings((prev) =>
           prev.map((rec) =>
             rec.id === entry.id
@@ -203,7 +207,10 @@ export const RecordingProvider: React.FC<{ children: ReactNode }> = ({
           durationMs: prev.durationMs,
           createdAt: prev.startedAt,
           updatedAt: finishedAt,
-          status: 'pending',
+          mode: prev.mode,
+          status: 'processing', // Set to processing initially
+          transcript: undefined,
+          transcriptSegments: undefined,
         };
         return undefined;
       });
@@ -222,7 +229,7 @@ export const RecordingProvider: React.FC<{ children: ReactNode }> = ({
       Alert.alert('Recording Error', 'Unable to stop recording.');
       return undefined;
     }
-  }, [recordings.length, transcribeRecordingAsync]);
+  }, [recordings.length]);
 
   const cancelRecording = useCallback(async () => {
     if (recordingStateRef.current === 'idle') {

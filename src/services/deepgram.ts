@@ -1,8 +1,11 @@
 import { DEEPGRAM_API_KEY } from '../config/env';
 import { TranscriptSegment } from '../types/recording';
 
-const DEEPGRAM_URL =
-  'https://api.deepgram.com/v1/listen?model=nova-2&smart_format=true';
+const DEEPGRAM_BASE_URL = 'https://api.deepgram.com/v1/listen';
+const DEFAULT_QUERY_PARAMS = {
+  model: 'nova-2',
+  smart_format: 'true',
+};
 
 export class DeepgramError extends Error {
   constructor(message: string) {
@@ -19,7 +22,24 @@ export interface TranscriptResult {
   segments: TranscriptSegment[];
 }
 
-export async function transcribeAudio(filePath: string): Promise<TranscriptResult> {
+export interface TranscriptionOptions {
+  diarize?: boolean;
+}
+
+const buildRequestUrl = (options?: TranscriptionOptions) => {
+  const params = new URLSearchParams(DEFAULT_QUERY_PARAMS);
+  if (options?.diarize) {
+    params.append('diarize', 'true');
+    params.append('multichannel', 'false');
+  }
+  const query = params.toString();
+  return query ? `${DEEPGRAM_BASE_URL}?${query}` : DEEPGRAM_BASE_URL;
+};
+
+export async function transcribeAudio(
+  filePath: string,
+  options?: TranscriptionOptions
+): Promise<TranscriptResult> {
   if (!DEEPGRAM_API_KEY) {
     throw new DeepgramError('Deepgram API key is not configured.');
   }
@@ -33,7 +53,7 @@ export async function transcribeAudio(filePath: string): Promise<TranscriptResul
     name: 'recording.aac',
   });
 
-  const response = await fetch(DEEPGRAM_URL, {
+  const response = await fetch(buildRequestUrl(options), {
     method: 'POST',
     headers: {
       Authorization: `Token ${DEEPGRAM_API_KEY}`,
@@ -54,8 +74,6 @@ export async function transcribeAudio(filePath: string): Promise<TranscriptResul
 
   const payload = await response.json();
 
-  console.log('response*****', payload);
-
   const alternative =
     payload?.results?.channels?.[0]?.alternatives?.[0] ?? undefined;
   const paragraphs = alternative?.paragraphs?.paragraphs ?? [];
@@ -70,6 +88,10 @@ export async function transcribeAudio(filePath: string): Promise<TranscriptResul
             startMs: Math.floor((paragraph?.start ?? 0) * 1000),
             endMs: Math.floor((paragraph?.end ?? 0) * 1000),
             text: (paragraph?.text ?? '').trim(),
+            speaker:
+              paragraph?.speaker !== undefined
+                ? String(paragraph.speaker)
+                : undefined,
           },
         ];
       }
@@ -79,6 +101,12 @@ export async function transcribeAudio(filePath: string): Promise<TranscriptResul
         startMs: Math.floor((sentence?.start ?? paragraph?.start ?? 0) * 1000),
         endMs: Math.floor((sentence?.end ?? paragraph?.end ?? 0) * 1000),
         text: (sentence?.text ?? '').trim(),
+        speaker:
+          sentence?.speaker !== undefined
+            ? String(sentence.speaker)
+            : paragraph?.speaker !== undefined
+            ? String(paragraph.speaker)
+            : undefined,
       }));
     }
   );

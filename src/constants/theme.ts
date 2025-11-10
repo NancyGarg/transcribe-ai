@@ -39,6 +39,12 @@ export const lightColors: Colors = {
   
   // Shadow
   shadow: '#000000',
+
+  // Speaker accents
+  speaker1: '#3ABA16',
+  speaker2: '#5856D6',
+  speaker3: '#FF9500',
+  speaker4: '#FF3B30',
 };
 
 // Dark theme colors
@@ -80,6 +86,12 @@ export const darkColors: Colors = {
   
   // Shadow
   shadow: '#000000',
+
+  // Speaker accents
+  speaker1: '#3ADA56',
+  speaker2: '#7D7AFF',
+  speaker3: '#FFB357',
+  speaker4: '#FF5E57',
 };
 
 // Light theme

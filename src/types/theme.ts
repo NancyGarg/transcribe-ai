@@ -38,6 +38,12 @@ export interface Colors {
   
   // Shadow
   shadow: string;
+
+  // Speaker accents
+  speaker1: string;
+  speaker2: string;
+  speaker3: string;
+  speaker4: string;
 }
 
 export interface Theme {
