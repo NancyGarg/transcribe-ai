@@ -7,8 +7,11 @@ import {
   TouchableOpacity,
   Switch,
   StatusBar,
+  ScrollView,
 } from 'react-native';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useTheme } from '../contexts/ThemeContext';
+import { useAuth } from '../contexts/AuthContext';
 import { Theme, ThemeMode } from '../types';
 
 const THEME_OPTIONS: Array<{
@@ -35,6 +38,7 @@ const THEME_OPTIONS: Array<{
 
 const SettingsScreen: React.FC = () => {
   const { theme, themeMode, themePreference, setThemeMode, isDark } = useTheme();
+  const { logout } = useAuth();
 
   const styles = createStyles(theme);
 
@@ -44,7 +48,11 @@ const SettingsScreen: React.FC = () => {
         barStyle={isDark ? 'light-content' : 'dark-content'}
         backgroundColor={theme.colors.background}
       />
-      <View style={styles.section}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.section}>
         <Text style={styles.sectionTitle}>Theme</Text>
         <Text style={styles.sectionSubtitle}>
           Choose how TranscribeAi adapts its appearance across the app.
@@ -96,6 +104,20 @@ const SettingsScreen: React.FC = () => {
           </Text>
         </View>
       </View>
+
+      <TouchableOpacity
+        style={styles.logoutButton}
+        onPress={logout}
+        activeOpacity={0.8}
+      >
+        <MaterialIcons
+          name="logout"
+          size={20}
+          color={theme.colors.error}
+        />
+        <Text style={styles.logoutButtonText}>Logout</Text>
+      </TouchableOpacity>
+      </ScrollView>
     </SafeAreaView>
   );
 };
@@ -105,8 +127,12 @@ const createStyles = (theme: Theme) =>
     container: {
       flex: 1,
       backgroundColor: theme.colors.background,
+    },
+    scrollContent: {
       paddingHorizontal: 20,
       paddingTop: 16,
+      paddingBottom: 32,
+      gap: 24,
     },
     section: {
       backgroundColor: theme.colors.surface,
@@ -198,6 +224,28 @@ const createStyles = (theme: Theme) =>
       fontWeight: '700',
       color: theme.colors.primary,
       textTransform: 'capitalize',
+    },
+    logoutButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: theme.colors.surface,
+      paddingVertical: 16,
+      paddingHorizontal: 24,
+      borderRadius: 12,
+      gap: 12,
+      borderWidth: 1,
+      borderColor: theme.colors.error,
+      shadowColor: theme.colors.shadow,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.1,
+      shadowRadius: 8,
+      elevation: 2,
+    },
+    logoutButtonText: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: theme.colors.error,
     },
   });
 

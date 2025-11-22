@@ -5,4 +5,5 @@ export {
   RecordingProvider,
   useRecordingContext,
 } from './RecordingContext';
+export { AuthProvider, useAuth } from './AuthContext';
 

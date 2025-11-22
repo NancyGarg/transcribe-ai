@@ -7,6 +7,8 @@ import {
   AppProvider,
   ThemeProvider,
   RecordingProvider,
+  AuthProvider,
+  useAuth,
   useTheme,
   useRecordingContext,
 } from './src/contexts';
@@ -15,6 +17,7 @@ import {
   SettingsScreen,
   LibraryScreen,
   RecordingDetailsScreen,
+  LoginScreen,
 } from './src/screens';
 import { RootStackParamList } from './src/navigation/types';
 import Header from './src/components/Header';
@@ -146,15 +149,29 @@ const AppNavigator: React.FC = () => {
   );
 };
 
+const AppContent: React.FC = () => {
+  const { isAuthenticated } = useAuth();
+
+  if (!isAuthenticated) {
+    return <LoginScreen />;
+  }
+
+  return (
+    <RecordingProvider>
+      <AppNavigator />
+    </RecordingProvider>
+  );
+};
+
 function App() {
   return (
     <ThemeProvider initialMode="system">
       <AppProvider>
         <SafeAreaProvider>
-          <RecordingProvider>
-            <AppNavigator />
+          <AuthProvider>
+            <AppContent />
             <Toast />
-          </RecordingProvider>
+          </AuthProvider>
         </SafeAreaProvider>
       </AppProvider>
     </ThemeProvider>
