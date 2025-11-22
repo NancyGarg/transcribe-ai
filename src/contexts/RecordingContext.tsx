@@ -18,6 +18,19 @@ import {
 } from '../types/recording';
 import { transcribeAudio, DeepgramError } from '../services/deepgram';
 import { showErrorToast, showSuccessToast } from '../services/toast';
+import {
+  saveAudioFile,
+  deleteAudioFile,
+  fileExists,
+  getAudioFilePath,
+} from '../services/fileStorage';
+import {
+  loadRecordings,
+  saveRecordings,
+  saveRecording,
+  deleteRecording as deleteRecordingMetadata,
+  clearRecordings as clearRecordingsStorage,
+} from '../services/metadataStorage';
 
 interface RecordingContextValue {
   recordings: RecordingEntry[];
@@ -45,6 +58,43 @@ export const RecordingProvider: React.FC<{ children: ReactNode }> = ({
   const [activeRecording, setActiveRecording] = useState<ActiveRecording>();
   const [isSavingRecording, setIsSavingRecording] = useState(false);
   const recordingStateRef = useRef<RecordingState>('idle');
+
+  // Load recordings from storage on mount
+  useEffect(() => {
+    const loadStoredRecordings = async () => {
+      try {
+        const storedRecordings = await loadRecordings();
+        // Verify files exist and filter out missing ones
+        const validRecordings: RecordingEntry[] = [];
+        for (const recording of storedRecordings) {
+          const exists = await fileExists(recording.id);
+          if (exists) {
+            // Update filePath to full path
+            validRecordings.push({
+              ...recording,
+              filePath: getAudioFilePath(recording.id),
+            });
+          } else {
+            // File missing - mark as failed
+            validRecordings.push({
+              ...recording,
+              status: 'failed',
+              errorMessage: 'Audio file not found',
+            });
+          }
+        }
+        setRecordings(validRecordings);
+        // Save back in case we filtered any
+        if (validRecordings.length !== storedRecordings.length) {
+          await saveRecordings(validRecordings);
+        }
+      } catch (error) {
+        console.error('Error loading recordings from storage:', error);
+      }
+    };
+
+    loadStoredRecordings();
+  }, []);
 
   useEffect(() => {
     recorderService.setSubscriptionDuration(1000);
@@ -133,20 +183,23 @@ export const RecordingProvider: React.FC<{ children: ReactNode }> = ({
         return;
       }
 
-      setRecordings((prev) =>
-        prev.map((rec) =>
+      setRecordings((prev) => {
+        const updated = prev.map((rec) =>
           rec.id === entry.id
             ? { ...rec, status: 'processing', updatedAt: Date.now() }
             : rec
-        )
-      );
+        );
+        // Save to storage
+        saveRecordings(updated).catch(console.error);
+        return updated;
+      });
 
       try {
         const { transcript, segments } = await transcribeAudio(entry.filePath, {
           diarize: entry.mode === 'INTERVIEW',
         });
-        setRecordings((prev) =>
-          prev.map((rec) =>
+        setRecordings((prev) => {
+          const updated = prev.map((rec) =>
             rec.id === entry.id
               ? {
                   ...rec,
@@ -156,16 +209,19 @@ export const RecordingProvider: React.FC<{ children: ReactNode }> = ({
                   updatedAt: Date.now(),
                 }
               : rec
-          )
-        );
+          );
+          // Save to storage
+          saveRecordings(updated).catch(console.error);
+          return updated;
+        });
         showSuccessToast('Transcription ready');
       } catch (error) {
         const errorMessage =
           error instanceof DeepgramError
             ? error.message
             : 'Transcription failed. Please try again later.';
-        setRecordings((prev) =>
-          prev.map((rec) =>
+        setRecordings((prev) => {
+          const updated = prev.map((rec) =>
             rec.id === entry.id
               ? {
                   ...rec,
@@ -175,8 +231,11 @@ export const RecordingProvider: React.FC<{ children: ReactNode }> = ({
                   updatedAt: Date.now(),
                 }
               : rec
-          )
-        );
+          );
+          // Save to storage
+          saveRecordings(updated).catch(console.error);
+          return updated;
+        });
         showErrorToast('Transcription failed', errorMessage);
       }
     },
@@ -184,17 +243,14 @@ export const RecordingProvider: React.FC<{ children: ReactNode }> = ({
   );
 
   const stopRecording = useCallback(async () => {
-
-
     if (recordingStateRef.current === 'idle') {
       return undefined;
     }
     setIsSavingRecording(true);
     try {
-      const filePath = await recorderService.stop();
+      const tempFilePath = await recorderService.stop();
       const finishedAt = Date.now();
       let completedRecording: RecordingEntry | undefined;
-  
 
       setActiveRecording((prev) => {
         if (!prev) {
@@ -203,7 +259,7 @@ export const RecordingProvider: React.FC<{ children: ReactNode }> = ({
         completedRecording = {
           id: prev.id,
           title: `Recording ${recordings.length + 1}`,
-          filePath: filePath || prev.filePath || '',
+          filePath: '', // Will be set after saving to device
           durationMs: prev.durationMs,
           createdAt: prev.startedAt,
           updatedAt: finishedAt,
@@ -215,9 +271,32 @@ export const RecordingProvider: React.FC<{ children: ReactNode }> = ({
         return undefined;
       });
 
-      if (completedRecording) {
-        setRecordings((prev) => [completedRecording!, ...prev]);
-        transcribeRecordingAsync(completedRecording);
+      if (completedRecording && tempFilePath) {
+        try {
+          // Save audio file to permanent storage
+          const savedFilePath = await saveAudioFile(
+            tempFilePath,
+            completedRecording.id
+          );
+          completedRecording.filePath = savedFilePath;
+
+          // Add to recordings array
+          setRecordings((prev) => {
+            const updated = [completedRecording!, ...prev];
+            // Save metadata to AsyncStorage
+            saveRecordings(updated).catch(console.error);
+            return updated;
+          });
+
+          // Start transcription
+          transcribeRecordingAsync(completedRecording);
+        } catch (fileError) {
+          console.error('Error saving audio file:', fileError);
+          Alert.alert(
+            'Save Error',
+            'Recording stopped but failed to save. The file may be lost.'
+          );
+        }
       }
 
       recordingStateRef.current = 'idle';
@@ -229,7 +308,7 @@ export const RecordingProvider: React.FC<{ children: ReactNode }> = ({
       Alert.alert('Recording Error', 'Unable to stop recording.');
       return undefined;
     }
-  }, [recordings.length]);
+  }, [recordings.length, transcribeRecordingAsync]);
 
   const cancelRecording = useCallback(async () => {
     if (recordingStateRef.current === 'idle') {
@@ -245,23 +324,53 @@ export const RecordingProvider: React.FC<{ children: ReactNode }> = ({
     }
   }, []);
 
-  const clearRecordings = useCallback(() => {
+  const clearRecordings = useCallback(async () => {
     setRecordings([]);
+    // Clear from AsyncStorage
+    try {
+      await clearRecordingsStorage();
+    } catch (error) {
+      console.error('Error clearing recordings from storage:', error);
+    }
   }, []);
 
-  const deleteRecording = useCallback(async (recordingId: string) => {
-    setRecordings((prev) => prev.filter((rec) => rec.id !== recordingId));
+  const deleteRecording = useCallback(
+    async (recordingId: string) => {
+      // Remove from state
+      setRecordings((prev) => {
+        const updated = prev.filter((rec) => rec.id !== recordingId);
+        // Save to storage
+        saveRecordings(updated).catch(console.error);
+        return updated;
+      });
 
-    if (activeRecording?.id === recordingId) {
+      // Delete audio file
       try {
-        await recorderService.stop();
+        await deleteAudioFile(recordingId);
       } catch (error) {
-        // ignore stop errors
+        console.error('Error deleting audio file:', error);
       }
-      recordingStateRef.current = 'idle';
-      setActiveRecording(undefined);
-    }
-  }, [activeRecording]);
+
+      // Delete metadata from storage
+      try {
+        await deleteRecordingMetadata(recordingId);
+      } catch (error) {
+        console.error('Error deleting recording metadata:', error);
+      }
+
+      // If it's the active recording, stop it
+      if (activeRecording?.id === recordingId) {
+        try {
+          await recorderService.stop();
+        } catch (error) {
+          // ignore stop errors
+        }
+        recordingStateRef.current = 'idle';
+        setActiveRecording(undefined);
+      }
+    },
+    [activeRecording]
+  );
 
   const value = useMemo<RecordingContextValue>(() => ({
     recordings,

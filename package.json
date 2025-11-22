@@ -10,6 +10,7 @@
     "test": "jest"
   },
   "dependencies": {
+    "@react-native-async-storage/async-storage": "^2.2.0",
     "@react-native-vector-icons/material-icons": "^12.4.0",
     "@react-native/new-app-screen": "0.82.1",
     "@react-navigation/native": "^7.1.19",
@@ -17,6 +18,7 @@
     "lottie-react-native": "^7.3.4",
     "react": "19.1.1",
     "react-native": "0.82.1",
+    "react-native-fs": "^2.20.0",
     "react-native-gesture-handler": "^2.29.1",
     "react-native-linear-gradient": "^2.8.3",
     "react-native-nitro-modules": "^0.31.5",
